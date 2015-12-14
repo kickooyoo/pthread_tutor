@@ -1,0 +1,163 @@
+diary on;
+clear; mex tridiag_inv_mex.cpp 
+tridiag_inv_mex.cpp: In function ‘sof tridiag_inv_mex(int, mxArray**, int, const mxArray**)’:
+tridiag_inv_mex.cpp:75:41: error: ‘mxCreatDoubleMatrix’ was not declared in this scope
+tridiag_inv_mex.cpp:80:13: error: ‘d’ was not declared in this scope
+tridiag_inv_mex.cpp:85:17: error: no match for ‘operator/’ in ‘* c / * b’
+tridiag_inv_mex.cpp:91:18: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:91:22: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:91:23: error: cannot convert ‘const mxArray’ to ‘int’ in assignment
+tridiag_inv_mex.cpp:92:26: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:92:30: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:92:31: error: cannot convert ‘mxArray’ to ‘int’ in assignment
+tridiag_inv_mex.cpp:93:13: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:93:25: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:93:38: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:93:57: error: no match for ‘operator-’ in ‘* b - (new_c_prev * a_prev)’
+tridiag_inv_mex.cpp:93:63: error: expected ‘)’ before ‘;’ token
+tridiag_inv_mex.cpp:95:13: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:95:42: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:95:46: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:95:51: error: no match for ‘operator*’ in ‘* new_d * a_prev’
+tridiag_inv_mex.cpp:95:64: error: ‘bb’ was not declared in this scope
+tridiag_inv_mex.cpp:98:12: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:98:16: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:98:47: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:98:51: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:98:63: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:98:66: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:98:68: error: no match for ‘operator*’ in ‘* new_d * * a’
+tridiag_inv_mex.cpp:98:80: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:98:83: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:98:98: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:98:102: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:98:114: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:98:117: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:98:119: error: no match for ‘operator*’ in ‘* new_c * * a’
+tridiag_inv_mex.cpp:101:8: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:101:12: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:101:27: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:101:30: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:101:31: error: invalid use of incomplete type ‘mxArray {aka struct mxArray_tag}’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘mxArray {aka struct mxArray_tag}’
+tridiag_inv_mex.cpp:104:9: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:104:25: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:104:41: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:104:54: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:104:58: error: invalid use of incomplete type ‘struct mxArray_tag’
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:257:16: error: forward declaration of ‘struct mxArray_tag’
+tridiag_inv_mex.cpp:104:60: error: no match for ‘operator*’ in ‘* new_c * *(* plhs)’
+tridiag_inv_mex.cpp: In function ‘sof tridiag_inv_thr(void*)’:
+tridiag_inv_mex.cpp:129:17: error: cannot convert ‘double*’ to ‘double’ in assignment
+tridiag_inv_mex.cpp:130:17: error: cannot convert ‘double*’ to ‘double’ in assignment
+tridiag_inv_mex.cpp:131:22: error: cannot convert ‘double*’ to ‘double’ in assignment
+tridiag_inv_mex.cpp:132:22: error: cannot convert ‘double*’ to ‘double’ in assignment
+tridiag_inv_mex.cpp:133:22: error: cannot convert ‘double*’ to ‘double’ in assignment
+tridiag_inv_mex.cpp:134:22: error: cannot convert ‘double*’ to ‘double’ in assignment
+tridiag_inv_mex.cpp:140:3: error: ‘new_c’ was not declared in this scope
+tridiag_inv_mex.cpp:140:12: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:140:17: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:141:3: error: ‘new_d_real’ was not declared in this scope
+tridiag_inv_mex.cpp:141:17: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:141:27: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:142:3: error: ‘new_d_imag’ was not declared in this scope
+tridiag_inv_mex.cpp:142:17: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:142:27: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:149:27: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:149:40: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:149:63: error: expected ‘)’ before ‘;’ token
+tridiag_inv_mex.cpp:150:38: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:150:79: error: ‘bb’ was not declared in this scope
+tridiag_inv_mex.cpp:151:38: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:153:29: error: ‘d’ was not declared in this scope
+tridiag_inv_mex.cpp:153:94: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:154:94: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:156:18: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:157:18: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:159:16: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:159:74: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:160:16: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:160:74: error: invalid type argument of unary ‘*’ (have ‘double’)
+tridiag_inv_mex.cpp:167:19: error: ‘pthread_exit’ was not declared in this scope
+tridiag_inv_mex.cpp: At global scope:
+tridiag_inv_mex.cpp:172:1: error: ‘Cmx’ has not been declared
+tridiag_inv_mex.cpp:173:1: error: ‘Cmx’ has not been declared
+tridiag_inv_mex.cpp:174:1: error: ‘Cmx’ has not been declared
+tridiag_inv_mex.cpp:175:1: error: ‘Cmx’ has not been declared
+tridiag_inv_mex.cpp: In function ‘sof tridiag_inv_mex_thr(int, mxArray**, int, int, int, int, int)’:
+tridiag_inv_mex.cpp:178:2: error: ‘tridiag_inv_worker_args’ was not declared in this scope
+tridiag_inv_mex.cpp:178:26: error: expected ‘;’ before ‘args’
+tridiag_inv_mex.cpp:193:31: error: invalid conversion from ‘int’ to ‘const mxArray* {aka const mxArray_tag*}’ [-fpermissive]
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:559:45: error:   initializing argument 1 of ‘double* mxGetPr(const mxArray*)’ [-fpermissive]
+tridiag_inv_mex.cpp:194:33: error: invalid conversion from ‘int’ to ‘const mxArray* {aka const mxArray_tag*}’ [-fpermissive]
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:559:45: error:   initializing argument 1 of ‘double* mxGetPr(const mxArray*)’ [-fpermissive]
+tridiag_inv_mex.cpp:195:31: error: invalid conversion from ‘int’ to ‘const mxArray* {aka const mxArray_tag*}’ [-fpermissive]
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:559:45: error:   initializing argument 1 of ‘double* mxGetPr(const mxArray*)’ [-fpermissive]
+tridiag_inv_mex.cpp:196:28: error: invalid conversion from ‘int’ to ‘const mxArray* {aka const mxArray_tag*}’ [-fpermissive]
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:559:45: error:   initializing argument 1 of ‘double* mxGetPr(const mxArray*)’ [-fpermissive]
+tridiag_inv_mex.cpp:197:28: error: invalid conversion from ‘int’ to ‘const mxArray* {aka const mxArray_tag*}’ [-fpermissive]
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:576:45: error:   initializing argument 1 of ‘double* mxGetPi(const mxArray*)’ [-fpermissive]
+tridiag_inv_mex.cpp:198:25: error: invalid conversion from ‘int’ to ‘const mxArray* {aka const mxArray_tag*}’ [-fpermissive]
+/usr/local/MATLAB/R2013b/extern/include/matrix.h:649:44: error:   initializing argument 1 of ‘size_t mxGetM(const mxArray*)’ [-fpermissive]
+tridiag_inv_mex.cpp:201:20: error: ‘nthread’ was not declared in this scope
+tridiag_inv_mex.cpp:207:25: error: ‘pthread_attr_init’ was not declared in this scope
+tridiag_inv_mex.cpp:208:37: error: ‘PTHREAD_CREATE_JOINABLE’ was not declared in this scope
+tridiag_inv_mex.cpp:208:60: error: ‘pthread_attr_setdetachstate’ was not declared in this scope
+tridiag_inv_mex.cpp:214:60: error: invalid conversion from ‘int’ to ‘double*’ [-fpermissive]
+tridiag_inv_mex.cpp:215:62: error: invalid conversion from ‘int’ to ‘double*’ [-fpermissive]
+tridiag_inv_mex.cpp:216:60: error: invalid conversion from ‘int’ to ‘double*’ [-fpermissive]
+tridiag_inv_mex.cpp:217:43: error: ‘rhs_real’ was not declared in this scope
+tridiag_inv_mex.cpp:218:43: error: ‘rhs_imag’ was not declared in this scope
+tridiag_inv_mex.cpp:221:3: error: ‘rc’ was not declared in this scope
+tridiag_inv_mex.cpp:221:24: error: ‘threads’ was not declared in this scope
+tridiag_inv_mex.cpp:221:98: error: expected ‘)’ before ‘;’ token
+tridiag_inv_mex.cpp:227:3: error: ‘rc’ was not declared in this scope
+tridiag_inv_mex.cpp:227:21: error: ‘threads’ was not declared in this scope
+tridiag_inv_mex.cpp:227:41: error: ‘pthread_join’ was not declared in this scope
+tridiag_inv_mex.cpp: In function ‘sof tridiag_inv_mex_gw(int, mxArray**, int, const mxArray**)’:
+tridiag_inv_mex.cpp:249:77: error: invalid conversion from ‘const mxArray* {aka const mxArray_tag*}’ to ‘int’ [-fpermissive]
+tridiag_inv_mex.cpp:170:12: error:   initializing argument 3 of ‘sof tridiag_inv_mex_thr(int, mxArray**, int, int, int, int, int)’ [-fpermissive]
+tridiag_inv_mex.cpp:249:77: error: invalid conversion from ‘const mxArray* {aka const mxArray_tag*}’ to ‘int’ [-fpermissive]
+tridiag_inv_mex.cpp:170:12: error:   initializing argument 4 of ‘sof tridiag_inv_mex_thr(int, mxArray**, int, int, int, int, int)’ [-fpermissive]
+tridiag_inv_mex.cpp:249:77: error: invalid conversion from ‘const mxArray* {aka const mxArray_tag*}’ to ‘int’ [-fpermissive]
+tridiag_inv_mex.cpp:170:12: error:   initializing argument 5 of ‘sof tridiag_inv_mex_thr(int, mxArray**, int, int, int, int, int)’ [-fpermissive]
+tridiag_inv_mex.cpp:249:77: error: invalid conversion from ‘const mxArray* {aka const mxArray_tag*}’ to ‘int’ [-fpermissive]
+tridiag_inv_mex.cpp:170:12: error:   initializing argument 6 of ‘sof tridiag_inv_mex_thr(int, mxArray**, int, int, int, int, int)’ [-fpermissive]
+tridiag_inv_mex.cpp:249:77: error: invalid conversion from ‘const mxArray* {aka const mxArray_tag*}’ to ‘int’ [-fpermissive]
+tridiag_inv_mex.cpp:170:12: error:   initializing argument 7 of ‘sof tridiag_inv_mex_thr(int, mxArray**, int, int, int, int, int)’ [-fpermissive]
+
+    mex: compile of ' "tridiag_inv_mex.cpp"' failed.
+
+{Unable to complete successfully.
+} 
+diary off
