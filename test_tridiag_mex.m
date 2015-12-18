@@ -1,5 +1,8 @@
 % test tridiag mex
-run('~/Documents/mai_code/mai_setup.m');
+
+if ~(exist('col','file') == 2)
+    run('~/Documents/mai_code/mai_setup.m');
+end
 addpath('~/Documents/mai_code/ADMM_tridiag/');
 addpath('~/Documents/mai_code/pthread_tutor/');
 

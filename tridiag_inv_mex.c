@@ -106,12 +106,12 @@ int nrhs, Const mxArray *prhs[])
 		*(new_d_db + ii) = (*(d + ii) - *(new_d_db + ii -1) * a_prev) / (*(b + ii) - new_c_prev * a_prev);
 		//new_d[ii] = (d[ii]-new_d[ii-1]*a[ii-1])/(b[ii]-new_c[ii-1]*a[ii-1]);
 	}
-	*(new_d_db + N - 1) = (*(d + N - 1) - *(new_d_db + N - 2) * (*(a + N -1))) / (*(b + N - 1) - *(new_c_db + N - 2) * (*(a + N - 2)));
+	*(new_d_db + N - 1) = (*(d + N - 1) - *(new_d_db + N - 2) * (*(a + N -2))) / (*(b + N - 1) - *(new_c_db + N - 2) * (*(a + N - 2)));
 	//new_d[N-1] = (d[N-1]-new_d[N-2]*a[N-1])/(b[N-1]-new_c[N-2]*a[N-2]);
 
 	*(x_db + N - 1) = *(new_d_db + N -1);
 	//x[N-1] = new_d[N-1];
-	for (ii = N-2; ii >= 1; ii--) {
+	for (ii = N-2; ii >= 0; ii--) {
 		*(x_db + ii) = *(new_d_db + ii) - *(new_c_db + ii) * (*(x_db + ii +1));
 		//x[ii] = new_d[ii]-new_c[ii]*x[ii+1];
 	}
