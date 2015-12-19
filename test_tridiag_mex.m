@@ -22,6 +22,7 @@ rng(0);
 N = 200;
 M = 200;
 d = 10*rand(N,M);
+d = d + 1i*10*rand(N,M);
 a = 10*rand(N-1,1);
 b = 10*rand(N,1);
 c = 10*rand(N-1,1);
@@ -29,6 +30,7 @@ c = 10*rand(N-1,1);
 tic
 x1 = apply_tridiag_inv(a, b, c, d);
 toc 
+x1_real = apply_tridiag_inv(a, b, c, real(d));
 
 % mex tridiag_inv_mex_nopar.c
 % try
@@ -51,3 +53,4 @@ catch
 end
 
 norm(x1-x3)
+norm(x1_real-x3)
