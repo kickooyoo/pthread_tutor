@@ -4,11 +4,7 @@
 
 
 #include "mex.h"
-#include "matrix.h"
-//#include "def,type.h"
-#include "defs-env.h"
-#include "jf,mex,def.h" 
-#include "jf,thread1.h"
+#include "def/defs-env.h"
 #include "pthread.h"
 
 //#if !defined(Need_tridiag_inv_mex_gateway)
@@ -16,7 +12,7 @@
 //#endif
 
 #define Usage "usage error. see above"
-#define NUM_THREADS 2 // number of cores // 4 for iv1, 2 for vega
+#define NUM_THREADS 4 // number of cores // 4 for iv1, 2 for vega
 
 //pthread_mutex_t mutexout; // global var for locking
 
