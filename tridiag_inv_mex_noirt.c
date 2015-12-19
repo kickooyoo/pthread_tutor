@@ -4,7 +4,7 @@
 
 
 #include "mex.h"
-#include "def/defs-env.h"
+//#include "def/defs-env.h"
 #include "pthread.h"
 
 //#if !defined(Need_tridiag_inv_mex_gateway)
@@ -150,7 +150,7 @@ Const mxArray *block_size_ptr)
 
 // currently assume all inputs real
 // wrapper function for thread
-static sof tridiag_inv_mex_thr(
+static void tridiag_inv_mex_thr(
 double *subdiag_ptr, double *diagvals_ptr, double *supdiag_ptr, double *rhs_real_ptr, double *rhs_imag_ptr, mwSize block_size, mwSize nblocks, double *out_real_ptr, double *out_imag_ptr)
 {
 	//tridiag_inv_worker_args args;
@@ -232,14 +232,13 @@ double *subdiag_ptr, double *diagvals_ptr, double *supdiag_ptr, double *rhs_real
         //        printf("\n");
         //        printf("done with thread blocks %d - %d \n", th_rep*(nblocks/NUM_THREADS), block_ndx);
     }
-	Ok
 }
 
 
 // intermediate GateWay routine 
-static sof tridiag_inv_mex_gw(
+static int tridiag_inv_mex_gw(
 int nlhs, mxArray *plhs[],
-int nrhs, Const mxArray *prhs[])
+int nrhs, const mxArray *prhs[])
 {
     double *sub;              /* input subdiagonal */
     double *diag;               /* 1xN input diagonal */
@@ -255,12 +254,11 @@ int nrhs, Const mxArray *prhs[])
 	if (nrhs != 4 ) { // hard coding :(
 		tridiag_inv_mex_help();
 		//Call(mxu_arg, (nrhs, prhs))
-		Fail(Usage)
+        exit(-1);
 	}
 
 	// todo: check lengths of vectors
 	//
-    
     
     sub = mxGetPr(prhs[0]);
     diag = mxGetPr(prhs[1]);
@@ -287,7 +285,7 @@ int nrhs, Const mxArray *prhs[])
 	//Call(tridiag_inv_mex_thr, (nlhs, plhs, nrhs, prhs)); // why is using "call" better?
     tridiag_inv_mex_thr(sub, diag, sup, rhs, rhs_imag, N, M, x_real, x_imag);
 	
-	Ok
+    return 1;
 }
 
 

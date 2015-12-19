@@ -21,11 +21,15 @@ addpath('~/Documents/mai_code/pthread_tutor/');
 rng(0);
 N = 200;
 M = 200;
-d = 10*rand(N,M);
-d = d + 1i*10*rand(N,M);
-a = 10*rand(N-1,1);
-b = 10*rand(N,1);
-c = 10*rand(N-1,1);
+scale = 10;
+d = scale*randn(N,M);
+d = d + 1i*scale*rand(N,M);
+a = scale*rand(N-1,1)-scale/2;
+b = scale*rand(N,1)-scale/2;
+c = scale*rand(N-1,1)-scale/2;
+
+T = diag(a,-1) + diag(b) + diag(c,1);
+x0 = T\d;
 
 tic
 x1 = apply_tridiag_inv(a, b, c, d);
@@ -43,14 +47,15 @@ x1_real = apply_tridiag_inv(a, b, c, real(d));
 % norm(x1-x2)
 
 %%
-mex tridiag_inv_mex.c
+mex tridiag_inv_mex_noirt.c
 try
     tic
-    x3 = tridiag_inv_mex(a, b, c, d);
+    x3 = tridiag_inv_mex_noirt(a, b, c, d);
     toc
 catch
     display('failed, prob seg fault');
 end
 
 norm(x1-x3)
-norm(x1_real-x3)
+norm(x0-x3)
+% norm(x1_real-x3)
