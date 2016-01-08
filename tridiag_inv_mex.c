@@ -270,7 +270,7 @@ int nrhs, Const mxArray *prhs[])
     M = mxGetN(prhs[3]);
     
     if (mxIsComplex(prhs[3])) {
-        printf("rhs is complex \n");
+        //printf("rhs is complex \n");
         rhs_imag = mxGetPi(prhs[3]);
         //out_imag_ptr = mxGetPi(plhs[0]);
         plhs[0] = mxCreateDoubleMatrix((mwSize)N, (mwSize) M, mxCOMPLEX);
