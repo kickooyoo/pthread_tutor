@@ -4,9 +4,7 @@
 
 
 #include "mex.h"
-#include "defs-env.h"
-#include "jf,mex,def.h"
-//#include "def/def,mexarg.h" // in above
+#include "def/defs-env.h"
 #include "pthread.h"
 
 //#if !defined(Need_tridiag_inv_mex_gateway)
@@ -14,7 +12,7 @@
 //#endif
 
 #define Usage "usage error. see above"
-#define NUM_THREADS 2 // number of cores // 4 for iv1, 2 for vega
+#define NUM_THREADS 1 // number of cores // 4 for iv1, 2 for vega
 
 //pthread_mutex_t mutexout; // global var for locking
 
@@ -42,11 +40,11 @@ struct thread_data
 {
 	int thread_id;
 	int block_size; 
-	float *subdiag_ptr;
-	float *diagvals_ptr;
-	float *supdiag_ptr;
-	float *rhs_ptr;
-	float *out_ptr;
+	double *subdiag_ptr;
+	double *diagvals_ptr;
+	double *supdiag_ptr;
+	double *rhs_ptr;
+	double *out_ptr;
 };
 
 struct thread_data thread_data_array[NUM_THREADS];
@@ -57,13 +55,13 @@ void *tridiag_inv_thr(void *threadarg)
 	//tridiag_inv_worker_args args;
 	int taskid;
 	int N;
-	float *a;
-	float *b;
-	float *c;
-    float *d;
-    float *x;
-	float *new_c;
-	float *new_d;
+	double *a;
+	double *b;
+	double *c;
+       	double *d;
+       	double *x;
+	double *new_c;
+	double *new_d;
 	struct thread_data *my_data;
 	my_data = (struct thread_data *) threadarg;
 	taskid = my_data -> thread_id;
@@ -75,14 +73,14 @@ void *tridiag_inv_thr(void *threadarg)
 	x = my_data -> out_ptr;
 
 	// need to malloc for x_real, x_imag, and then free them ??
-	new_c = (float *) calloc (N - 1, sizeof(float));
-	new_d = (float *) calloc (N, sizeof(float));
+	new_c = (double *) calloc (N - 1, sizeof(double));
+	new_d = (double *) calloc (N, sizeof(double));
 
 	*new_c = *c / *b; //new_c[0] = c[0]/b[0];
 	*new_d = *d / *b; //new_d[0] = d[0]/b[0];
 
 	int ii;
-	float a_prev, new_c_prev;
+	double a_prev, new_c_prev;
 	for (ii = 1; ii <= N-2; ii++) {
 		/*
 		a_prev = *(a + ii - 1);
@@ -116,13 +114,12 @@ void *tridiag_inv_thr(void *threadarg)
 	pthread_exit(NULL);
 }
 
-/*
 void *tridiag_inv_loop_thr(void *threadarg) // for loop over tridiag_inv_thr
 {
     int ii;
     for (ii = 0; ii < )
- 
-} */
+
+}
 
 /*
  static sof check_types_and_sizes(
@@ -161,7 +158,7 @@ Const mxArray *block_size_ptr)
 // currently assume all inputs real
 // wrapper function for thread
 static sof tridiag_inv_mex_thr(
-float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr, float *rhs_imag_ptr, mwSize block_size, mwSize nblocks, float *out_real_ptr, float *out_imag_ptr)
+double *subdiag_ptr, double *diagvals_ptr, double *supdiag_ptr, double *rhs_real_ptr, double *rhs_imag_ptr, mwSize block_size, mwSize nblocks, double *out_real_ptr, double *out_imag_ptr, int *nthreads_ptr)
 {
 	//tridiag_inv_worker_args args;
 
@@ -170,23 +167,17 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
 	int rc;
 	long t;
     int block_ndx;
+    int nthreads;
 	pthread_attr_t attr;
+    
+    nthreads
 	
 //	printf("block size : %d \n", block_size);
 //    printf("nblocks : %d, NUM_THREADS: %d, nblocks/NUM_THREADS: %d \n", nblocks, NUM_THREADS, (nblocks/ NUM_THREADS));
-	pthread_t threads[NUM_THREADS];
+	pthread_t threads[nthreads];
 
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-    
-/*    for (int ii = 0; ii < block_size*nblocks; ii++) {
-        out_real_ptr[ii] = rhs_real_ptr[ii];
-    
-    } */
-    
-    //printf("th_rep up to: %d", nblocks/NUM_THREADS);
-    
-    
     
 //    printf("\n");
     // do all real values first
@@ -220,9 +211,6 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
 //        printf("\n");
 //        printf("done with thread blocks %d - %d \n", th_rep*(nblocks/NUM_THREADS), block_ndx);
     }
-    
-    if ((rhs_imag_ptr != NULL) && (out_imag_ptr != NULL)) {
-     
     // do all complex values next
     for (int th_rep = 0; th_rep <= nblocks/NUM_THREADS; th_rep++) {
         for (int th_id = 0; th_id < NUM_THREADS; th_id++) {
@@ -254,9 +242,6 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
         //        printf("\n");
         //        printf("done with thread blocks %d - %d \n", th_rep*(nblocks/NUM_THREADS), block_ndx);
     }
-    }
-    
-    
 	Ok
 }
 
@@ -266,16 +251,17 @@ static sof tridiag_inv_mex_gw(
 int nlhs, mxArray *plhs[],
 int nrhs, Const mxArray *prhs[])
 {
-    float *sub;              /* input subdiagonal */
-    float *diag;               /* 1xN input diagonal */
-    float *sup;
-    float *rhs;
-    float *rhs_imag;
+    double *sub;              /* input subdiagonal */
+    double *diag;               /* 1xN input diagonal */
+    double *sup;
+    double *rhs;
+    double *rhs_imag;
+    int *nthreads_ptr;
 
     size_t N;                   /* size of tridiag matrix */
     size_t M;                   /* numcols of rhs matrix */
-    float *x_real;                  /* output */
-    float *x_imag;                  /* output */
+    double *x_real;                  /* output */
+    double *x_imag;                  /* output */
     
 	if (nrhs != 4 ) { // hard coding :(
 		tridiag_inv_mex_help();
@@ -284,60 +270,34 @@ int nrhs, Const mxArray *prhs[])
 	}
 
 	// todo: check lengths of vectors
-	
-    // todo: check type of inputs
-    if ( (mxIsSingle(prhs[0]) == 0) || (mxIsSingle(prhs[1]) == 0) || (mxIsSingle(prhs[2]) == 0) ) {
-        tridiag_inv_mex_help();
-        printf("inputs need to be single precision \n ");
-        //Call(mxu_arg, (nrhs, prhs))
-        Fail(Usage)
-    }
+	//
     
     
-    
-    // todo: check complexity of inputs
-    
-    
-    sub = (float *) mxGetData(prhs[0]);
-    diag = (float *)  mxGetData(prhs[1]);
-    sup =  (float *) mxGetData(prhs[2]);
-    rhs = (float *) mxGetData(prhs[3]);
+    sub = mxGetPr(prhs[0]);
+    diag = mxGetPr(prhs[1]);
+    sup = mxGetPr(prhs[2]);
+    rhs = mxGetPr(prhs[3]);
+    nthreads_ptr = (int *)mxGetData(prhs[4]);
     N = mxGetM(prhs[1]); //remember col vec!
     M = mxGetN(prhs[3]);
     
-
-    
-    
-    
     if (mxIsComplex(prhs[3])) {
         //printf("rhs is complex \n");
-        rhs_imag = (float *) mxGetImagData(prhs[3]);
-        //plhs[0] = mxCreateDoubleMatrix((mwSize)N, (mwSize) M, mxCOMPLEX);
-        plhs[0] = mxCreateNumericMatrix((int) N * (int) M, 1, mxSINGLE_CLASS, mxCOMPLEX);
+        rhs_imag = mxGetPi(prhs[3]);
+        //out_imag_ptr = mxGetPi(plhs[0]);
+        plhs[0] = mxCreateDoubleMatrix((mwSize)N, (mwSize) M, mxCOMPLEX);
     } else {
         rhs_imag = NULL;
-        //plhs[0] = mxCreateDoubleMatrix((mwSize)N, (mwSize) M, mxREAL);
-        plhs[0] = mxCreateNumericMatrix((int) N *  (int) M, 1, mxSINGLE_CLASS, mxREAL);
+        plhs[0] = mxCreateDoubleMatrix((mwSize)N, (mwSize) M, mxREAL);
+        
     }
-    x_real = (float *)mxGetData(plhs[0]);
-    x_imag = (float *)mxGetImagData(plhs[0]); // NULL when rhs is real
+    x_real = mxGetPr(plhs[0]);
+    x_imag = mxGetPi(plhs[0]); // NULL when rhs is real
     
    // check_types_and_sizes(sub, diag, sup, rhs, N, M);
     
-/*     int out_size;
-     out_size = (int) N *  (int) M;
-     //plhs[0] = mxCreateNumericMatrix(out_size, 1, mxSINGLE_CLASS, mxREAL);
-     //x_real = (float *)mxGetData(plhs[0]);
-     for (int ii = 0; ii < out_size; ii++) {
-         x_real[ii] = rhs[ii];
-     } */
-    
-    if ((rhs_imag == NULL) ^ (x_imag == NULL)) {
-        printf("problem: only one NULL vec, should be both or neither");
-    }
-    
-	Call(tridiag_inv_mex_thr, (sub, diag, sup, rhs, rhs_imag, N, M, x_real, x_imag));
-    //tridiag_inv_mex_thr(sub, diag, sup, rhs, rhs_imag, N, M, x_real, x_imag);
+	//Call(tridiag_inv_mex_thr, (nlhs, plhs, nrhs, prhs)); // why is using "call" better?
+    tridiag_inv_mex_thr(sub, diag, sup, rhs, rhs_imag, N, M, x_real, x_imag, nthreads_ptr);
 	
 	Ok
 }

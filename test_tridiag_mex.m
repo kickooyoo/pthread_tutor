@@ -47,8 +47,7 @@ x1_real = apply_tridiag_inv(a, b, c, real(d));
 % end
 % norm(x1-x2)
 
-%%
-%mex tridiag_inv_mex_noirt.c
+%%x
 mex -O CFLAGS="\$CFLAGS -std=c99" tridiag_inv_mex.c
 
 try
