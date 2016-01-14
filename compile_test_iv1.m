@@ -11,8 +11,8 @@
 
 % for C99, had to remove -ansi flag from mexopts.sh on line 59 and 75
 % apparently ansi means -std=c89, hence the conflict
-mex -O CFLAGS="\$CFLAGS -std=C99" hello_mex.c
+mex -O CFLAGS="\$CFLAGS -std=c99" hello_mex.c
 
-mex -O CFLAGS="\$CFLAGS -Wp,-lang-c-c++-comments" tridiag_inv_mex.c
+%mex -O CFLAGS="\$CFLAGS -Wp,-lang-c-c++-comments" tridiag_inv_mex.c
 
 mex timestwo.c

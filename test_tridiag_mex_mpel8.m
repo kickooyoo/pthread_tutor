@@ -1,11 +1,11 @@
 % test tridiag mex
 
-if ~(exist('col','file') == 2)
-    run('~/Documents/mai_code/mai_setup.m');
-end
-addpath('~/Documents/mai_code/ADMM_tridiag/');
-addpath('~/Documents/mai_code/pthread_tutor/');
-addpath('~/Documents/mai_code/util/');
+%if ~(exist('col','file') == 2)
+%    run('~/Documents/mai_code/mai_setup.m');
+%end
+%addpath('~/Documents/mai_code/ADMM_tridiag/');
+%addpath('~/Documents/mai_code/pthread_tutor/');
+%addpath('~/Documents/mai_code/util/');
 
 % d = [1 2 1]';
 % 
@@ -32,28 +32,17 @@ c = scale*rand(N-1,1)-scale/2;
 T = diag(a,-1) + diag(b) + diag(c,1);
 x0 = T\d;
 
-tic
-x1 = apply_tridiag_inv(a, b, c, d);
-toc 
-x1_real = apply_tridiag_inv(a, b, c, real(d));
-
-% mex tridiag_inv_mex_nopar.c
-% try
-%     tic
-%     x2 = tridiag_inv_mex_nopar(a, b, c, d);
-%     toc
-% catch
-%     display('failed, prob seg fault');
-% end
-% norm(x1-x2)
+%tic
+%x1 = apply_tridiag_inv(a, b, c, d);
+%toc 
+%x1_real = apply_tridiag_inv(a, b, c, real(d));
 
 %%
-%mex tridiag_inv_mex_noirt.c
-mex -O CFLAGS="\$CFLAGS -std=c99" tridiag_inv_mex.c
+mex -O CFLAGS="\$CFLAGS -std=c99" tridiag_inv_mex_mpel8.c
 
 try
     tic
-    x3 = tridiag_inv_mex(a, b, c, d);
+    x3 = tridiag_inv_mex_mpel8(a, b, c, d);
     toc
 catch
     display('failed, prob seg fault');
@@ -77,11 +66,11 @@ for ii = 1:length(Ns)
 	a = scale*rand(N-1,1)-scale/2;
 	b = scale*rand(N,1)-scale/2;
 	c = scale*rand(N-1,1)-scale/2;
+	%tic
+	%x1 = ir_apply_tridiag_inv(a, b, c, d);
+	%ml_toc(ii) = toc;     
 	tic
-	x1 = ir_apply_tridiag_inv(a, b, c, d);
-	ml_toc(ii) = toc;     
-	tic
-    	x3 = tridiag_inv_mex(a, b, c, d);
+    	x3 = tridiag_inv_mex_mpel8(a, b, c, d);
    	pthr_toc(ii) = toc;
 
 end
