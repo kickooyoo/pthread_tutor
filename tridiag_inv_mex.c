@@ -41,7 +41,8 @@ static void tridiag_inv_mex_help(void)
 struct thread_data
 {
 	int thread_id;
-	int block_size; 
+	int block_size;
+    int num_blocks_for_me;
 	float *subdiag_ptr;
 	float *diagvals_ptr;
 	float *supdiag_ptr;
@@ -51,19 +52,17 @@ struct thread_data
 
 struct thread_data thread_data_array[NUM_THREADS];
 
-//static sof tridiag_inv_thr(void *threadarg)
-void *tridiag_inv_thr(void *threadarg)
+static sof tridiag_inv(float *a, float *b, float *c, float *d, int N, float *x)
 {
 	//tridiag_inv_worker_args args;
-	int taskid;
+/*	int taskid;
 	int N;
 	float *a;
 	float *b;
 	float *c;
     float *d;
     float *x;
-	float *new_c;
-	float *new_d;
+
 	struct thread_data *my_data;
 	my_data = (struct thread_data *) threadarg;
 	taskid = my_data -> thread_id;
@@ -72,8 +71,11 @@ void *tridiag_inv_thr(void *threadarg)
 	b = my_data -> diagvals_ptr;
 	c = my_data -> supdiag_ptr;
 	d = my_data -> rhs_ptr;
-	x = my_data -> out_ptr;
-
+	x = my_data -> out_ptr; */
+    
+    float *new_c;
+    float *new_d;
+    
 	// need to malloc for x_real, x_imag, and then free them ??
 	new_c = (float *) calloc (N - 1, sizeof(float));
 	new_d = (float *) calloc (N, sizeof(float));
@@ -113,16 +115,48 @@ void *tridiag_inv_thr(void *threadarg)
 	free(new_c);
 	free(new_d);
 
-	pthread_exit(NULL);
+	Ok
 }
 
-/*
-void *tridiag_inv_loop_thr(void *threadarg) // for loop over tridiag_inv_thr
+
+static sof tridiag_inv_loop_thr(void *threadarg) // for loop over tridiag_inv_thr
 {
-    int ii;
-    for (ii = 0; ii < )
- 
-} */
+    struct thread_data *my_data;
+    int taskid;
+    int num_runs;
+    int N;
+    float *a;
+    float *b;
+    float *c;
+    float *d;
+    float *x;
+//    float *new_c;
+//    float *new_d;
+    my_data = (struct thread_data *) threadarg;
+    taskid = my_data -> thread_id;
+    N = my_data -> block_size;
+    a = my_data -> subdiag_ptr;
+    b = my_data -> diagvals_ptr;
+    c = my_data -> supdiag_ptr;
+    d = my_data -> rhs_ptr;
+    x = my_data -> out_ptr;
+    num_runs = my_data -> num_blocks_for_me;
+    
+    printf("inside looper func with num runs %d \n", num_runs);
+    for (int ii = 0; ii < num_runs; ii++) {
+        printf(" looping over index %d /%d \n", ii, num_runs);
+        
+        printf("address of rhs: %d, incr by %d,  new addr: %d, float size: %d \n", d, N, d+N, sizeof(float));
+        tridiag_inv(a, b, c, d, N, x);
+        
+                // increment to block, same tridiag for all so no inc a, b, c
+        d += N;
+        x += N;
+    }
+    
+    pthread_exit(NULL);
+    Ok
+}
 
 /*
  static sof check_types_and_sizes(
@@ -165,12 +199,14 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
 {
 	//tridiag_inv_worker_args args;
 
-	int ii;
+	//int ii;
 	int big_N; // total number of entries, N*nblocks
 	int rc;
 	long t;
     int block_ndx;
-	pthread_attr_t attr;
+    int blocks_per_thread;
+    
+    pthread_attr_t attr;
 	
 //	printf("block size : %d \n", block_size);
 //    printf("nblocks : %d, NUM_THREADS: %d, nblocks/NUM_THREADS: %d \n", nblocks, NUM_THREADS, (nblocks/ NUM_THREADS));
@@ -179,48 +215,52 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     
-/*    for (int ii = 0; ii < block_size*nblocks; ii++) {
-        out_real_ptr[ii] = rhs_real_ptr[ii];
+    blocks_per_thread = nblocks/NUM_THREADS;
     
-    } */
-    
-    //printf("th_rep up to: %d", nblocks/NUM_THREADS);
+    printf(" blocks per thread: %d \n", blocks_per_thread);
     
     
     
-//    printf("\n");
+
+    
+    //    printf("\n");
     // do all real values first
-    for (int th_rep = 0; th_rep <= nblocks/NUM_THREADS; th_rep++) {
-        for (int th_id = 0; th_id < NUM_THREADS; th_id++) {
-            block_ndx = th_rep * NUM_THREADS + th_id;
-//            printf("th_rep: %d, th_id: %d, block_ndx: %d \n", th_rep, th_id, block_ndx);
-            if (block_ndx <= nblocks - 1) {
-                thread_data_array[th_id].thread_id = th_id;
-                thread_data_array[th_id].block_size = block_size;
-                thread_data_array[th_id].subdiag_ptr = subdiag_ptr;// + th_id * block_size;
-                thread_data_array[th_id].diagvals_ptr = diagvals_ptr;// + th_id * block_size;
-                thread_data_array[th_id].supdiag_ptr = supdiag_ptr;// + th_id * block_size;
-                thread_data_array[th_id].rhs_ptr = rhs_real_ptr + block_ndx * block_size;
-                thread_data_array[th_id].out_ptr = out_real_ptr + block_ndx * block_size;
-                rc = pthread_create(&threads[th_id], &attr, tridiag_inv_thr, (void *) &(thread_data_array[th_id]));
-            }
-        }
-//        printf("\n");
-        for (int th_id = 0; th_id < NUM_THREADS; th_id++) {
-            block_ndx = th_rep * NUM_THREADS + th_id;
-            if (block_ndx <= nblocks - 1) {
-                rc = pthread_join(threads[th_id], NULL);
-                if (rc) {
-                    printf("ERROR; return code from pthread_join() is %d\n", rc);
-                    exit(-1);
-                }
-//                printf("done with thread ndx %d ", block_ndx);
-            }
-        }
-//        printf("\n");
-//        printf("done with thread blocks %d - %d \n", th_rep*(nblocks/NUM_THREADS), block_ndx);
+    //for (int th_rep = 0; th_rep <= nblocks/NUM_THREADS; th_rep++) {
+    for (int th_id = 0; th_id < NUM_THREADS; th_id++) {
+        //block_ndx = th_rep * NUM_THREADS + th_id;
+        //            printf("th_rep: %d, th_id: %d, block_ndx: %d \n", th_rep, th_id, block_ndx);
+        //if (block_ndx <= nblocks - 1) {
+        thread_data_array[th_id].thread_id = th_id;
+        thread_data_array[th_id].block_size = block_size;
+        thread_data_array[th_id].subdiag_ptr = subdiag_ptr;// + th_id * block_size;
+        thread_data_array[th_id].diagvals_ptr = diagvals_ptr;// + th_id * block_size;
+        thread_data_array[th_id].supdiag_ptr = supdiag_ptr;// + th_id * block_size;
+        thread_data_array[th_id].rhs_ptr = rhs_real_ptr + th_id * blocks_per_thread * block_size;
+        thread_data_array[th_id].out_ptr = out_real_ptr + th_id * blocks_per_thread * block_size;
+        thread_data_array[th_id].num_blocks_for_me = blocks_per_thread;
+        
+        printf(" th_id: %d, block size: %d, incr: %d , nblocks: %d \n", th_id, block_size, blocks_per_thread * block_size, nblocks);
+        rc = pthread_create(&threads[th_id], &attr, (void *) &tridiag_inv_loop_thr, (void *) &(thread_data_array[th_id]));
+        //}
     }
-    
+    Ok
+        /*
+    //        printf("\n");
+    for (int th_id = 0; th_id < NUM_THREADS; th_id++) {
+        //  block_ndx = th_rep * NUM_THREADS + th_id;
+        //  if (block_ndx <= nblocks - 1) {
+        rc = pthread_join(threads[th_id], NULL);
+        if (rc) {
+            printf("ERROR; return code from pthread_join() is %d\n", rc);
+            exit(-1);
+        }
+        //                printf("done with thread ndx %d ", block_ndx);
+        // }
+    }
+    //        printf("\n");
+    //        printf("done with thread blocks %d - %d \n", th_rep*(nblocks/NUM_THREADS), block_ndx);
+//}
+
     if ((rhs_imag_ptr != NULL) && (out_imag_ptr != NULL)) {
      
     // do all complex values next
@@ -236,7 +276,7 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
                 thread_data_array[th_id].supdiag_ptr = supdiag_ptr;// + th_id * block_size;
                 thread_data_array[th_id].rhs_ptr = rhs_imag_ptr + block_ndx * block_size;
                 thread_data_array[th_id].out_ptr = out_imag_ptr + block_ndx * block_size;
-                rc = pthread_create(&threads[th_id], &attr, tridiag_inv_thr, (void *) &(thread_data_array[th_id]));
+                rc = pthread_create(&threads[th_id], &attr, (void *) &tridiag_inv_loop_thr, (void *) &(thread_data_array[th_id]));
             }
         }
         //        printf("\n");
@@ -257,7 +297,7 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
     }
     
     
-	Ok
+	Ok */
 }
 
 
