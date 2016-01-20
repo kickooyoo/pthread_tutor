@@ -15,6 +15,7 @@
 
 #define Usage "usage error. see above"
 #define NUM_THREADS 2 // number of cores // 4 for iv1, 2 for vega
+#define VERBOSE false
 
 //pthread_mutex_t mutexout; // global var for locking
 
@@ -46,8 +47,10 @@ struct thread_data
 	float *subdiag_ptr;
 	float *diagvals_ptr;
 	float *supdiag_ptr;
-	float *rhs_ptr;
-	float *out_ptr;
+	float *rhsr_ptr;
+    float *rhsi_ptr;
+	float *outr_ptr;
+    float *outi_ptr;
 };
 
 struct thread_data thread_data_array[NUM_THREADS];
@@ -128,8 +131,10 @@ static sof tridiag_inv_loop_thr(void *threadarg) // for loop over tridiag_inv_th
     float *a;
     float *b;
     float *c;
-    float *d;
-    float *x;
+    float *dr;
+    float *xr;
+    float *di;
+    float *xi;
 //    float *new_c;
 //    float *new_d;
     my_data = (struct thread_data *) threadarg;
@@ -138,20 +143,31 @@ static sof tridiag_inv_loop_thr(void *threadarg) // for loop over tridiag_inv_th
     a = my_data -> subdiag_ptr;
     b = my_data -> diagvals_ptr;
     c = my_data -> supdiag_ptr;
-    d = my_data -> rhs_ptr;
-    x = my_data -> out_ptr;
+    dr = my_data -> rhsr_ptr;
+    di = my_data -> rhsi_ptr;
+    xr = my_data -> outr_ptr;
+    xi = my_data -> outi_ptr;
     num_runs = my_data -> num_blocks_for_me;
-    
+#if VERBOSE
     printf("inside looper func with num runs %d \n", num_runs);
+#endif
     for (int ii = 0; ii < num_runs; ii++) {
+#if VERBOSE
         printf(" looping over index %d /%d \n", ii, num_runs);
         
-        printf("address of rhs: %d, incr by %d,  new addr: %d, float size: %d \n", d, N, d+N, sizeof(float));
-        tridiag_inv(a, b, c, d, N, x);
-        
+        printf("address of rhs: %d, incr by %d,  new addr: %d, float size: %d \n", dr, N, dr+N, sizeof(float));
+        printf("rhs vals: \n");
+        for (int jj = 0; jj < N; jj++) {
+            printf("rhs[%d] = %d \n", jj, dr[jj]);
+        }
+#endif
+        tridiag_inv(a, b, c, dr, N, xr);
+        tridiag_inv(a, b, c, di, N, xi);
                 // increment to block, same tridiag for all so no inc a, b, c
-        d += N;
-        x += N;
+        dr += N;
+        xr += N;
+        di += N;
+        xi += N;
     }
     
     pthread_exit(NULL);
@@ -204,7 +220,9 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
 	int rc;
 	long t;
     int block_ndx;
-    int blocks_per_thread;
+    int blocks_per_thread[NUM_THREADS];
+    int cum_blocks_per_thread[NUM_THREADS + 1];
+    int remainder_blocks;
     
     pthread_attr_t attr;
 	
@@ -215,14 +233,36 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     
-    blocks_per_thread = nblocks/NUM_THREADS;
-    
-    printf(" blocks per thread: %d \n", blocks_per_thread);
-    
-    
-    
+    //blocks_per_thread = nblocks/NUM_THREADS;
+    // distribute blocks across threads evenly
 
+    remainder_blocks = nblocks - (nblocks/NUM_THREADS)*NUM_THREADS;
+#if VERBOSE
+    printf("NUM_THREADS: %d, nblocks: %d \n", NUM_THREADS, nblocks);
+    printf("remainder_blocks: %d \n", remainder_blocks);
+#endif
+    int sum_check;
+    sum_check = 0;
+    cum_blocks_per_thread[0] = 0;
+    for (int th_ndx = 0; th_ndx < NUM_THREADS; th_ndx++) {
+        blocks_per_thread[th_ndx] = nblocks/NUM_THREADS;
+        if (th_ndx < remainder_blocks) {
+            blocks_per_thread[th_ndx]++;
+        }
+        cum_blocks_per_thread[th_ndx + 1] = cum_blocks_per_thread[th_ndx] + blocks_per_thread[th_ndx];
+        sum_check += blocks_per_thread[th_ndx];
+#if VERBOSE
+        printf("cum_blocks_per_thread for %d : %d \n", th_ndx+1, cum_blocks_per_thread[th_ndx+1]);
+#endif
+    }
+#if VERBOSE
+    printf("sum check: %d, cumsum: %d, should be %d \n", sum_check, cum_blocks_per_thread[NUM_THREADS], nblocks);
     
+    printf("rhs vals: \n");
+    for (int jj = 0; jj < block_size; jj++) {
+        printf("rhs[%d] = %d \n", jj, *(rhs_real_ptr + jj) );
+    }
+#endif
     //    printf("\n");
     // do all real values first
     //for (int th_rep = 0; th_rep <= nblocks/NUM_THREADS; th_rep++) {
@@ -232,14 +272,17 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
         //if (block_ndx <= nblocks - 1) {
         thread_data_array[th_id].thread_id = th_id;
         thread_data_array[th_id].block_size = block_size;
-        thread_data_array[th_id].subdiag_ptr = subdiag_ptr;// + th_id * block_size;
-        thread_data_array[th_id].diagvals_ptr = diagvals_ptr;// + th_id * block_size;
-        thread_data_array[th_id].supdiag_ptr = supdiag_ptr;// + th_id * block_size;
-        thread_data_array[th_id].rhs_ptr = rhs_real_ptr + th_id * blocks_per_thread * block_size;
-        thread_data_array[th_id].out_ptr = out_real_ptr + th_id * blocks_per_thread * block_size;
-        thread_data_array[th_id].num_blocks_for_me = blocks_per_thread;
-        
-        printf(" th_id: %d, block size: %d, incr: %d , nblocks: %d \n", th_id, block_size, blocks_per_thread * block_size, nblocks);
+        thread_data_array[th_id].subdiag_ptr = subdiag_ptr;
+        thread_data_array[th_id].diagvals_ptr = diagvals_ptr;
+        thread_data_array[th_id].supdiag_ptr = supdiag_ptr;
+        thread_data_array[th_id].rhsr_ptr = rhs_real_ptr + cum_blocks_per_thread[th_id] * block_size;
+        thread_data_array[th_id].outr_ptr = out_real_ptr + cum_blocks_per_thread[th_id] * block_size;
+        thread_data_array[th_id].rhsi_ptr = rhs_imag_ptr + cum_blocks_per_thread[th_id] * block_size;
+        thread_data_array[th_id].outi_ptr = out_imag_ptr + cum_blocks_per_thread[th_id] * block_size;
+        thread_data_array[th_id].num_blocks_for_me = blocks_per_thread[th_id];
+#if VERBOSE
+        printf(" th_id: %d, rhs ptr: %d, curr ptr: %d \n \n", th_id, rhs_real_ptr, thread_data_array[th_id].rhsr_ptr);
+#endif
         rc = pthread_create(&threads[th_id], &attr, (void *) &tridiag_inv_loop_thr, (void *) &(thread_data_array[th_id]));
         //}
     }
@@ -344,10 +387,16 @@ int nrhs, Const mxArray *prhs[])
     rhs = (float *) mxGetData(prhs[3]);
     N = mxGetM(prhs[1]); //remember col vec!
     M = mxGetN(prhs[3]);
-    
 
-    
-    
+#if VERBOSE
+    printf("M: %d, N: %d \n", M, N);
+
+    printf(" address of rhs in gw: %d \n", rhs);
+    printf("rhs vals: \n");
+    for (int jj = 0; jj < N; jj++) {
+        printf("rhs[%d] = %f \n", jj, *(rhs + jj) );
+    }
+#endif
     
     if (mxIsComplex(prhs[3])) {
         //printf("rhs is complex \n");

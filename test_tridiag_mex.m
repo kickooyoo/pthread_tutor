@@ -20,14 +20,27 @@ addpath('~/Documents/mai_code/util/');
 % c = [6]';
 
 rng(0);
-N = 200;
-M = 200;
+N = 100;
+M = 50;
 scale = 10;
 d = scale*randn(N,M);
 d = d + 1i*scale*rand(N,M);
 a = scale*rand(N-1,1)-scale/2;
 b = scale*rand(N,1)-scale/2;
 c = scale*rand(N-1,1)-scale/2;
+
+
+% d = col(1:N);
+% d = d + 1i*col(1:N);
+% a = col(1:N-1) - 2;
+% c = flipud(a);
+% b = col(N:-1:1);
+
+d = single(d);
+a = single(a);
+b = single(b);
+c = single(c);
+
 
 T = diag(a,-1) + diag(b) + diag(c,1);
 x0 = T\d;
@@ -48,20 +61,20 @@ x1_real = apply_tridiag_inv(a, b, c, real(d));
 % norm(x1-x2)
 
 %%x
-mex -O CFLAGS="\$CFLAGS -std=c99" tridiag_inv_mex.c
+mex -O CFLAGS="\$CFLAGS -std=c99" -I./def/ tridiag_inv_mex.c
 
 try
     tic
-    x3 = tridiag_inv_mex(a, b, c, d);
+    x3 = tridiag_inv_mex(single(a), single(b), single(c), single(d));
     toc
 catch
     display('failed, prob seg fault');
 end
 
 %norm(x1-x3)
-%norm(x0-x3)
+norm(col(x0)-col(x3))
 % norm(x1_real-x3)
-
+return
 %% plot times as func of N
 
 Ns = 100:100:10000;
