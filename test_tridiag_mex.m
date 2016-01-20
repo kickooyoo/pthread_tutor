@@ -20,18 +20,18 @@ addpath('~/Documents/mai_code/util/');
 % c = [6]';
 
 rng(0);
-N = 100;
-M = 50;
+N = 10;
+M = 5;
 scale = 10;
 d = scale*randn(N,M);
-d = d + 1i*scale*rand(N,M);
+%d = d + 1i*scale*rand(N,M);
 a = scale*rand(N-1,1)-scale/2;
 b = scale*rand(N,1)-scale/2;
 c = scale*rand(N-1,1)-scale/2;
 
 
 % d = col(1:N);
-% d = d + 1i*col(1:N);
+% %d = d + 1i*col(1:N);
 % a = col(1:N-1) - 2;
 % c = flipud(a);
 % b = col(N:-1:1);
@@ -61,11 +61,23 @@ x1_real = apply_tridiag_inv(a, b, c, real(d));
 % norm(x1-x2)
 
 %%x
-mex -O CFLAGS="\$CFLAGS -std=c99" -I./def/ tridiag_inv_mex.c
+% mex -O CFLAGS="\$CFLAGS -std=c99" -I./def/ tridiag_inv_mex.c
+% 
+% try
+%     tic
+%     x3 = tridiag_inv_mex(single(a), single(b), single(c), single(d));
+%     toc
+% catch
+%     display('failed, prob seg fault');
+% end
 
+mex -O CFLAGS="\$CFLAGS -std=c99" -I./def/ tridiag_inv_mex_varnthread.c
+
+ncores = int16(2);
 try
     tic
-    x3 = tridiag_inv_mex(single(a), single(b), single(c), single(d));
+    x3 = tridiag_inv_mex_varnthreads(single(a), single(b), single(c), ...
+        single(d), ncores);
     toc
 catch
     display('failed, prob seg fault');
