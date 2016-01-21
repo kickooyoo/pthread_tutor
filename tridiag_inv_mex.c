@@ -18,29 +18,6 @@
 static void tridiag_inv_mex_help(void)
 {
     printf("\n\
-           \n\
-           y[n;m] = sum_{k=0}^{Nx-1} x[k] h[n - d[k;m]], n=0,...,Ny-1, m=0,...,Nm-1\n\
-           for 0 <= n - d[k;m] <= Nh - 1\n\
-           \n\
-           y = function('delaysum1,forw[,thr]', h, d, nthread, x, Ny, chat)\n\
-           y: (single) [Ny Nm]\n\
-           \n\
-           h: (single) [Nh 1] function to be delayed\n\
-           d: (single) [Nx Nm] delays (positive or negative)\n\
-           nthread: (int32) # of threads\n\
-           x: (single) [Nx 1] coefficients\n\
-           Ny: (int32) output size\n\
-           chat: (int32) be verbose with threading\n\
-           \n\
-           x = function('delaysum1,back[,thr]', h, d, nthread, y, chat)\n\
-           x: (single) [Nx 1]\n\
-           \n\
-           y: (single) [Ny Nm] or [Ny*Nm 1]\n\
-           \n\
-           This is the threaded 2012 version.\n\
-           \n");
-
-	printf("\n\
 	Usage for tridiag_inv_mex: \n\
 	output = tridiag_inv_mex(subdiag, diagvals, supdiag, argum) \n\
 	\n\
@@ -52,7 +29,6 @@ static void tridiag_inv_mex_help(void)
            argum: (single) [N M] rhs of inverse problem, y \n\
 	\n");
 }
-
 
 struct thread_data
 {

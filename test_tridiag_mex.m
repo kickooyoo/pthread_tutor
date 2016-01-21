@@ -24,7 +24,6 @@ x1 = ir_apply_tridiag_inv(a, b, c, d);
 % compile as needed
 % mex -O CFLAGS="\$CFLAGS -std=c99" -I./def/ tridiag_inv_mex.c
 
-ncores = int16(2);
 try
     x2 = tridiag_inv_mex(a, b, c, d);
 catch
