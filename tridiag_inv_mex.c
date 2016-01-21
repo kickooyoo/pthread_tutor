@@ -14,7 +14,6 @@
 #define NUM_THREADS 2 // number of cores // 4 for iv1, 2 for vega
 #define VERBOSE false
 
-//pthread_mutex_t mutexout; // global var for locking
 
 static void tridiag_inv_mex_help(void)
 {
@@ -53,9 +52,8 @@ static sof tridiag_inv(float *a, float *b, float *c, float *d, int N, float *x)
     
 	new_c = (float *) calloc (N - 1, sizeof(float));
 	new_d = (float *) calloc (N, sizeof(float));
-
-	*new_c = *c / *b; //new_c[0] = c[0]/b[0];
-	*new_d = *d / *b; //new_d[0] = d[0]/b[0];
+	*new_c = *c / *b;
+	*new_d = *d / *b;
 
 	int ii;
 	float a_prev, new_c_prev;
@@ -71,13 +69,6 @@ static sof tridiag_inv(float *a, float *b, float *c, float *d, int N, float *x)
 	for (ii = N-2; ii >= 0; ii--) {
         x[ii] = new_d[ii] - new_c[ii] * x[ii + 1];
 	}
-#if VERBOSE
-	printf("task id: %d \n", taskid);
-#endif
-
-//	pthread_mutex_lock(&mutexout);
-	
-//	pthread_mutex_unlock(&mutexout);
 	free(new_c);
 	free(new_d);
 
@@ -111,7 +102,7 @@ static sof tridiag_inv_loop_thr(void *threadarg)
     xi = my_data -> outi_ptr;
     num_runs = my_data -> num_blocks_for_me;
 #if VERBOSE
-    printf("inside looper func with num runs %d \n", num_runs);
+    printf("taskid: %d, inside looper func with num runs %d \n", taskid, num_runs);
 #endif
     for (int ii = 0; ii < num_runs; ii++) {
 #if VERBOSE
@@ -137,38 +128,77 @@ static sof tridiag_inv_loop_thr(void *threadarg)
     Ok
 }
 
-/*
- static sof check_types_and_sizes(
-Const mxArray *subdiag, 
-Const mxArray *diagvals, 
-Const mxArray *supdiag, 
-Const mxArray *rhs, 
-Const mxArray *block_size_ptr)
+// check_types_and_sizes()
+static sof check_types_and_sizes(
+Const mxArray *prhs[]
+)
 {
+    int Nsub;
+    int Msub;
+    int Ndiag;
+    int Mdiag;
+    int Nsup;
+    int Msup;
+    int Nrhs;
+    
+    Nsub = mxGetM(prhs[0]);
+    Msub = mxGetN(prhs[0]);
+    Ndiag = mxGetM(prhs[1]);
+    Mdiag = mxGetN(prhs[1]);
+    Nsup = mxGetM(prhs[2]);
+    Msup = mxGetN(prhs[2]);
+    Nrhs = mxGetM(prhs[3]);
+    
 	int pass = 1;
-	if (!mxIsDouble(subdiag)) {
-		printf("subdiag is not double type \n");
+	if (!((Nsub == Nrhs - 1) && (Msub == 1)) && !((Nsub == 1) && (Msub == Nrhs - 1))) {
+		printf("subdiag size [%d %d] does not match rhs length of %d \n", Nsub, Msub, Nrhs);
 		pass = 0;
 	}
-	if (!mxIsDouble(supdiag)) {
-		printf("supdiag is not double type \n");
-		pass = 0;
+    if (!((Ndiag == Nrhs) && (Mdiag == 1)) && !((Ndiag == 1) && (Mdiag == Nrhs))) {
+        printf("diag size [%d %d] does not match rhs length of %d \n", Ndiag, Mdiag, Nrhs);
+        pass = 0;
+    }
+    if (!((Nsup == Nrhs - 1) && (Msup == 1)) && !((Nsup == 1) && (Msup == Nrhs - 1))) {
+        printf("supdiag size [%d %d] does not match rhs length of %d \n", Nsup, Msup, Nrhs);
+        pass = 0;
+    }
+    if (mxIsComplex(prhs[0])) {
+        printf("subdiag cannot be complex \n");
+        pass = 0;
+    }
+    if (!mxIsClass(prhs[0], "single")) {
+        printf("subdiag must be single \n");
+        pass = 0;
+    }
+    if (mxIsComplex(prhs[1])) {
+        printf("diag cannot be complex \n");
+        pass = 0;
+    }
+    if (!mxIsClass(prhs[1], "single")) {
+        printf("diag must be single \n");
+        pass = 0;
+    }
+    if (mxIsComplex(prhs[2])) {
+        printf("supdiag cannot be complex \n");
+        pass = 0;
+    }
+    if (!mxIsClass(prhs[2], "single")) {
+        printf("supdiag must be single \n");
+        pass = 0;
+    }
+    if (!mxIsClass(prhs[3], "single")) {
+        printf("rhs must be single \n");
+        pass = 0;
+    }
+#if VERBOSE
+	if (!pass) {
+		tridiag_inv_mex_help();
+        Fail(Usage)
 	}
-	if (!mxIsDouble(diagvals)) {
-		printf("diagvals is not double type \n");
-		pass = 0;
-	}
-	if (!mxIsDouble(rhs)) {
-		printf("rhs is not double type \n");
-		pass = 0;
-	}
-	// todo: check lengths using mxGetM
-	if (pass) {
-		printf(" all are double types \n");
-	}
+#endif
 	printf("\n");
     Ok
-} */
+}
 
 
 // currently assume all inputs real
@@ -176,9 +206,6 @@ Const mxArray *block_size_ptr)
 static sof tridiag_inv_mex_thr(
 float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr, float *rhs_imag_ptr, mwSize block_size, mwSize nblocks, float *out_real_ptr, float *out_imag_ptr)
 {
-	//tridiag_inv_worker_args args;
-
-	//int ii;
 	int big_N; // total number of entries, N*nblocks
 	int rc;
 	long t;
@@ -225,8 +252,13 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
         thread_data_array[th_id].supdiag_ptr = supdiag_ptr;
         thread_data_array[th_id].rhsr_ptr = rhs_real_ptr + cum_blocks[th_id] * block_size;
         thread_data_array[th_id].outr_ptr = out_real_ptr + cum_blocks[th_id] * block_size;
-        thread_data_array[th_id].rhsi_ptr = rhs_imag_ptr + cum_blocks[th_id] * block_size;
-        thread_data_array[th_id].outi_ptr = out_imag_ptr + cum_blocks[th_id] * block_size;
+        if (rhs_imag_ptr != NULL) {
+            thread_data_array[th_id].rhsi_ptr = rhs_imag_ptr + cum_blocks[th_id] * block_size;
+            thread_data_array[th_id].outi_ptr = out_imag_ptr + cum_blocks[th_id] * block_size;
+        } else {
+            thread_data_array[th_id].rhsi_ptr = NULL;
+            thread_data_array[th_id].outi_ptr = NULL;
+        }
         thread_data_array[th_id].num_blocks_for_me = blocks_per_thread[th_id];
 #if VERBOSE
         printf(" th_id: %d, rhs ptr: %d, curr ptr: %d \n \n", th_id, rhs_real_ptr, thread_data_array[th_id].rhsr_ptr);
@@ -247,42 +279,27 @@ int nrhs, Const mxArray *prhs[])
     float *sup;
     float *rhs;
     float *rhs_imag;
-
     size_t N;                   /* size of tridiag matrix */
     size_t M;                   /* numcols of rhs matrix */
     float *x_real;                  /* output */
     float *x_imag;                  /* output */
     
-	if (nrhs != 4 ) { // hard coding :(
+	if (nrhs != 4 ) {
 		tridiag_inv_mex_help();
-		//Call(mxu_arg, (nrhs, prhs))
 		Fail(Usage)
 	}
 
-	// todo: check lengths of vectors
-	
-    // todo: check type of inputs
-    if ( (mxIsSingle(prhs[0]) == 0) || (mxIsSingle(prhs[1]) == 0) || (mxIsSingle(prhs[2]) == 0) ) {
-        tridiag_inv_mex_help();
-        printf("inputs need to be single precision \n ");
-        //Call(mxu_arg, (nrhs, prhs))
-        Fail(Usage)
-    }
-    
-    
-    // todo: check complexity of inputs
-    
+    check_types_and_sizes(prhs);
     
     sub = (float *) mxGetData(prhs[0]);
     diag = (float *)  mxGetData(prhs[1]);
     sup =  (float *) mxGetData(prhs[2]);
     rhs = (float *) mxGetData(prhs[3]);
-    N = mxGetM(prhs[1]); //remember col vec!
+    N = mxGetM(prhs[1]) + mxGetN(prhs[1]) - 1; // agnostic to col or row
     M = mxGetN(prhs[3]);
 
 #if VERBOSE
     printf("M: %d, N: %d \n", M, N);
-
     printf(" address of rhs in gw: %d \n", rhs);
     printf("rhs vals: \n");
     for (int jj = 0; jj < N; jj++) {
@@ -291,29 +308,20 @@ int nrhs, Const mxArray *prhs[])
 #endif
     
     if (mxIsComplex(prhs[3])) {
-        //printf("rhs is complex \n");
         rhs_imag = (float *) mxGetImagData(prhs[3]);
-        //plhs[0] = mxCreateDoubleMatrix((mwSize)N, (mwSize) M, mxCOMPLEX);
-        plhs[0] = mxCreateNumericMatrix((int) N * (int) M, 1, mxSINGLE_CLASS, mxCOMPLEX);
+        plhs[0] = mxCreateNumericMatrix((int) N, (int) M, mxSINGLE_CLASS, mxCOMPLEX);
     } else {
         rhs_imag = NULL;
-        //plhs[0] = mxCreateDoubleMatrix((mwSize)N, (mwSize) M, mxREAL);
-        plhs[0] = mxCreateNumericMatrix((int) N *  (int) M, 1, mxSINGLE_CLASS, mxREAL);
+        plhs[0] = mxCreateNumericMatrix((int) N, (int) M, mxSINGLE_CLASS, mxREAL);
     }
     x_real = (float *)mxGetData(plhs[0]);
     x_imag = (float *)mxGetImagData(plhs[0]); // NULL when rhs is real
-
-    
-   // check_types_and_sizes(sub, diag, sup, rhs, N, M);
-    
     
     if ((rhs_imag == NULL) ^ (x_imag == NULL)) {
         printf("problem: only one NULL vec, should be both or neither");
     }
     
 	Call(tridiag_inv_mex_thr, (sub, diag, sup, rhs, rhs_imag, N, M, x_real, x_imag));
-    //tridiag_inv_mex_thr(sub, diag, sup, rhs, rhs_imag, N, M, x_real, x_imag);
-	
 	Ok
 }
 

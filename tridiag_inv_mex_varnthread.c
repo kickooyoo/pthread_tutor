@@ -84,8 +84,10 @@ static sof tridiag_inv(float *a, float *b, float *c, float *d, int N, float *x)
 
 // tridiag_inv_loop_thr()
 // each thread loops over tridiag_inv
-static sof tridiag_inv_loop_thr(void *threadarg)
+static sof tridiag_inv_loop_thr(void *threadarg, cint tid, cint nthread)
 {
+    
+    // todo: pass in just one set of data and fastforward according to cum_blocks and tid
     struct thread_data *my_data;
     int taskid;
     int num_runs;
@@ -181,25 +183,34 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
 	int rc;
 	long t;
     int block_ndx;
-    int blocks_per_thread[ncores];
-    int cum_blocks[ncores + 1];
+    int *blocks_per_thread;
+    int *cum_blocks;
     int remainder_blocks;
-    struct thread_data thread_data_array[ncores];
+    struct thread_data *thread_data_array;
+    int nthread;
     
+    nthread = ncores; //jf_thread1_ncore(-1); // trouble!
+    
+    printf(" ncores detected : %d, mandated: %d \n", nthread, ncores);
+    
+    Mem0(blocks_per_thread, nthread);
+    Mem0(cum_blocks, nthread + 1);
+    Mem0(thread_data_array, nthread);
+
     pthread_attr_t attr;
-	pthread_t threads[ncores];
+	pthread_t threads[nthread];
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-    remainder_blocks = nblocks - (nblocks/ncores)*ncores;
+    remainder_blocks = nblocks - (nblocks/nthread)*nthread;
 #if VERBOSE
-    printf("NUM_THREADS: %d, nblocks: %d \n", ncores, nblocks);
+    printf("NUM_THREADS: %d, nblocks: %d \n", nthread, nblocks);
     printf("remainder_blocks: %d \n", remainder_blocks);
 #endif
     
     cum_blocks[0] = 0;
-    for (int th_ndx = 0; th_ndx < ncores; th_ndx++) {
-        blocks_per_thread[th_ndx] = nblocks/ncores;
+    for (int th_ndx = 0; th_ndx < nthread; th_ndx++) {
+        blocks_per_thread[th_ndx] = nblocks/nthread;
         if (th_ndx < remainder_blocks) {
             blocks_per_thread[th_ndx]++;
         }
@@ -218,7 +229,7 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
     
     
     
-    for (int th_id = 0; th_id < ncores; th_id++) {
+    for (int th_id = 0; th_id < nthread; th_id++) {
         thread_data_array[th_id].thread_id = th_id;
         thread_data_array[th_id].block_size = block_size;
         thread_data_array[th_id].subdiag_ptr = subdiag_ptr;
@@ -235,7 +246,10 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
         //rc = pthread_create(&threads[th_id], &attr, (void *) &tridiag_inv_loop_thr, (void *) &(thread_data_array[th_id]));
     }
     
-    jf_thread1_top(tridiag_inv_loop_thr, NULL, &thread_data_array, ncores, 0);
+    Free0(blocks_per_thread);
+    Free0(cum_blocks);
+    Free0(thread_data_array);
+    
 
     Ok
 }
