@@ -63,4 +63,17 @@ for ii = 1:nrep
    	cpu etoc pthr_mex1
 end
 
+%% bad inputs
 
+% mixed row and col vectors for a, b, c OK
+x3 = tridiag_inv_mex(a, b', c, d);
+
+% bad sizes
+x3 = tridiag_inv_mex(a(3:end), b, c, d);
+x3 = tridiag_inv_mex(a, b, [c; 1; -1], d);
+x3 = tridiag_inv_mex(a, b, c, scale*rand(N+1, M));
+
+% bad types
+x3 = tridiag_inv_mex(double(a), b, c, d);
+x3 = tridiag_inv_mex(a, b, c, double(d));
+x3 = tridiag_inv_mex(a, int16(b), c, d);
