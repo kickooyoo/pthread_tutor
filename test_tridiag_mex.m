@@ -30,8 +30,10 @@ catch
     display('tridiag_inv_mex.c failed');
 end
 
-equivs(x0, x2)
-equivs(x1, x2)
+norm(x0-x2)
+norm(x1-x2)
+%equivs(x0, x2)
+%equivs(x1, x2)
 
 %% speed test with \ and ir_apply_tridiag
 

@@ -12,7 +12,7 @@
 
 #define Usage "usage error. see above"
 #define NUM_THREADS 2 // number of cores // 4 for iv1, 2 for vega
-#define VERBOSE false
+#define VERBOSE true
 
 
 static void tridiag_inv_mex_help(void)
@@ -48,15 +48,11 @@ struct thread_data thread_data_array[NUM_THREADS];
 
 // tridiag_inv()
 // tridiag solver over one block
-static sof tridiag_inv(float *a, float *b, float *c, float *d, int N, float *x)
+static sof tridiag_inv(float *a, float *b, float *c, float *d, int N, float *x, float *new_c, float *new_d)
 {
-    float *new_c;
-    float *new_d;
-    
-	new_c = (float *) calloc (N - 1, sizeof(float));
-	new_d = (float *) calloc (N, sizeof(float));
-	*new_c = *c / *b;
-	*new_d = *d / *b;
+
+	new_c[0] = c[0] / b[0];
+	new_d[0] = d[0] / b[0];
 
 	int ii;
 	float a_prev, new_c_prev;
@@ -72,8 +68,7 @@ static sof tridiag_inv(float *a, float *b, float *c, float *d, int N, float *x)
 	for (ii = N-2; ii >= 0; ii--) {
         x[ii] = new_d[ii] - new_c[ii] * x[ii + 1];
 	}
-	free(new_c);
-	free(new_d);
+
 
 	Ok
 }
@@ -93,6 +88,10 @@ static sof tridiag_inv_loop_thr(void *threadarg)
     float *xr;
     float *di;
     float *xi;
+    float *new_c;
+    float *new_d;
+    
+
     my_data = (struct thread_data *) threadarg;
     taskid = my_data -> thread_id;
     N = my_data -> block_size;
@@ -104,8 +103,11 @@ static sof tridiag_inv_loop_thr(void *threadarg)
     di = my_data -> rhsi_ptr;
     xi = my_data -> outi_ptr;
     num_runs = my_data -> num_blocks_for_me;
+    new_c = (float *) calloc (N - 1, sizeof(float));
+    new_d = (float *) calloc (N, sizeof(float));
+    
 #if VERBOSE
-    printf("taskid: %d, inside looper func with num runs %d \n", taskid, num_runs);
+    printf("taskid: %d, N: %d, inside looper func with num runs %d \n", taskid, N, num_runs);
 #endif
     for (int ii = 0; ii < num_runs; ii++) {
 #if VERBOSE
@@ -117,15 +119,17 @@ static sof tridiag_inv_loop_thr(void *threadarg)
             printf("rhs[%d] = %d \n", jj, dr[jj]);
         }
 #endif
-        tridiag_inv(a, b, c, dr, N, xr);
+        tridiag_inv(a, b, c, dr, N, xr, new_c, new_d);
         dr += N;
         xr += N;
         if (xi != NULL) {
-            tridiag_inv(a, b, c, di, N, xi);
+            tridiag_inv(a, b, c, di, N, xi, new_c, new_d);
             di += N;
             xi += N;
         }
     }
+    free(new_c);
+    free(new_d);
     
     pthread_exit(NULL);
     Ok
