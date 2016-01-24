@@ -1,40 +1,38 @@
-/* tridiag_inv_mex_varnthread.c
+/* tridiag_inv_mex.c
  Matlab mex file for tridiagonal solver 2013-11-09
  T * x = y
  assumes real tridiagonal matrix T, rhs y is formulated as NxM matrix, computes M columns of x in parallel
- user chooses nthreads
 */
 
 #include "mex.h"
 #include "defs-env.h"
 #include "jf,mex,def.h"
 //#include "def/def,mexarg.h" // in above
-#include "jf,thread1.h"
 #include "pthread.h"
 
 #define Usage "usage error. see above"
-#define VERBOSE true
-#define DEBUG true
+#define NUM_THREADS 2 // number of cores // 4 for iv1, 2 for vega
+#define VERBOSE false
 
-static void tridiag_inv_varnthread_mex_help(void)
+
+static void tridiag_inv_mex_help(void)
 {
     printf("\n\
-           Usage for tridiag_inv_mex: \n\
-           output = tridiag_inv_mex(subdiag, diagvals, supdiag, argum, ncores) \n\
-           \n\
+	Usage for tridiag_inv_mex: \n\
+	output = tridiag_inv_mex(subdiag, diagvals, supdiag, argum) \n\
+	\n\
            T * x = y \n\
            \n\
            subdiag: (single, real) [N-1 1] -1st subdiagonal values of T \n\
            diagvals: (single, real) [N 1] diagonal values of T \n\
            supdiag: (single, real) [N-1 1] 1st diagonal values of T \n\
            argum: (single) [N M] rhs of inverse problem, y \n\
-           ncores: (int 16) # of threads \n\
-           \n");
+	\n");
 }
 
 struct thread_data
 {
-	int thread_id;
+    int thread_id;
 	int block_size;
     int num_blocks_for_me;
 	float *subdiag_ptr;
@@ -46,27 +44,16 @@ struct thread_data
     float *outi_ptr;
 };
 
+struct thread_data thread_data_array[NUM_THREADS];
+
 // tridiag_inv()
 // tridiag solver over one block
 static sof tridiag_inv(float *a, float *b, float *c, float *d, int N, float *x, float *new_c, float *new_d)
 {
-#if DEBUG
-    for (int ii = 0; ii < N; ii++) {
-        new_d[ii] = ii+5;
-    }
 
-#endif
-    
-    for (int ii = 0; ii < N; ii++) {
-        x[ii] = ii;
-    }
-    Ok
-    
-    /*
-    new_c[0] = c[0] / b[0];
-    new_d[0] = d[0] / b[0];
-    
-    
+	new_c[0] = c[0] / b[0];
+	new_d[0] = d[0] / b[0];
+
 	int ii;
 	float a_prev, new_c_prev;
 	for (ii = 1; ii <= N-2; ii++) {
@@ -81,19 +68,13 @@ static sof tridiag_inv(float *a, float *b, float *c, float *d, int N, float *x, 
 	for (ii = N-2; ii >= 0; ii--) {
         x[ii] = new_d[ii] - new_c[ii] * x[ii + 1];
 	}
-
-	Ok */
+	Ok
 }
 
 // tridiag_inv_loop_thr()
 // each thread loops over tridiag_inv
 static sof tridiag_inv_loop_thr(void *threadarg)
 {
-#if VERBOSE
-    printf(" made it into a thread! \n ");
-#endif
-    
-    // todo: pass in just one set of data and fastforward according to cum_blocks and tid
     struct thread_data *my_data;
     int taskid;
     int num_runs;
@@ -119,53 +100,35 @@ static sof tridiag_inv_loop_thr(void *threadarg)
     di = my_data -> rhsi_ptr;
     xi = my_data -> outi_ptr;
     num_runs = my_data -> num_blocks_for_me;
-    
     new_c = (float *) calloc (N - 1, sizeof(float));
     new_d = (float *) calloc (N, sizeof(float));
-    //Mem0(new_c, N-1);
-    //Mem0(new_d, N);
     
 #if VERBOSE
-    printf("taskid: %d, N: %d, *N: %d, num runs %d, *num_runs: %d \n", taskid, N, *(int *)N, num_runs, *(int *)num_runs);
+    printf("taskid: %d, N: %d, inside looper func with num runs %d \n", taskid, N, num_runs);
 #endif
-    for (int ii = 0; ii < 1; ii++) {
+    for (int ii = 0; ii < num_runs; ii++) {
 #if VERBOSE
         printf(" looping over index %d /%d \n", ii, num_runs);
         
         printf("address of rhs: %d, incr by %d,  new addr: %d, float size: %d \n", dr, N, dr+N, sizeof(float));
-/*        printf("rhs vals: \n");
-        for (int jj = 0; jj < N; jj++) {
+        printf("rhs vals: \n");
+/*        for (int jj = 0; jj < N; jj++) {
             printf("rhs[%d] = %d \n", jj, dr[jj]);
         } */
 #endif
-        //tridiag_inv(a, b, c, dr, N, xr, new_c, new_d);
+        tridiag_inv(a, b, c, dr, N, xr, new_c, new_d);
         dr += N;
         xr += N;
         if (xi != NULL) {
-            if (di == NULL) {
-                printf(" big problem, di should not be null \n");
-            }
-            //tridiag_inv(a, b, c, di, N, xi, new_c, new_d);
+            tridiag_inv(a, b, c, di, N, xi, new_c, new_d);
             di += N;
             xi += N;
         }
     }
-  /*
-#if DEBUG
-    printf("wrote into new_d: [");
-    for (int ii = 0; ii < N; ii++) {
-        printf("%f, ", new_d[ii]);
-    }
-    printf("] \n");
-#endif */
-    
-
-    //Free0(new_c);
-    //Free0(new_d);
-    
-    pthread_exit(NULL);
     free(new_c);
     free(new_d);
+    
+    pthread_exit(NULL);
     Ok
 }
 
@@ -190,11 +153,11 @@ Const mxArray *prhs[]
     Msup = mxGetN(prhs[2]);
     Nrhs = mxGetM(prhs[3]);
     
-    int pass = 1;
-    if (!((Nsub == Nrhs - 1) && (Msub == 1)) && !((Nsub == 1) && (Msub == Nrhs - 1))) {
-        printf("subdiag size [%d %d] does not match rhs length of %d \n", Nsub, Msub, Nrhs);
-        pass = 0;
-    }
+	int pass = 1;
+	if (!((Nsub == Nrhs - 1) && (Msub == 1)) && !((Nsub == 1) && (Msub == Nrhs - 1))) {
+		printf("subdiag size [%d %d] does not match rhs length of %d \n", Nsub, Msub, Nrhs);
+		pass = 0;
+	}
     if (!((Ndiag == Nrhs) && (Mdiag == 1)) && !((Ndiag == 1) && (Mdiag == Nrhs))) {
         printf("diag size [%d %d] does not match rhs length of %d \n", Ndiag, Mdiag, Nrhs);
         pass = 0;
@@ -231,71 +194,58 @@ Const mxArray *prhs[]
         printf("rhs must be single \n");
         pass = 0;
     }
-    // todo: check type of prhs[4] int16
-    if (!mxIsClass(prhs[4], "int16")) {
-        printf("ncores must be int16 \n");
-        pass = 0;
-    }
-    if (!pass) {
-        tridiag_inv_varnthread_mex_help();
+	if (!pass) {
+        printf("\n");
+		tridiag_inv_mex_help();
         Fail(Usage)
-    }
-    printf("\n");
+        printf("\n");
+	}
     Ok
 }
 
 
 // currently assume all inputs real
 // wrapper function for thread
-static sof tridiag_inv_varnthread_mex_thr(
-float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr, float *rhs_imag_ptr, mwSize block_size, mwSize nblocks, float *out_real_ptr, float *out_imag_ptr, int ncores)
+static sof tridiag_inv_mex_thr(
+float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr, float *rhs_imag_ptr, mwSize block_size, mwSize nblocks, float *out_real_ptr, float *out_imag_ptr, int nthreads)
 {
-	int big_N; // total number of entries, N*nblocks
 	int rc;
     int block_ndx;
-    int *blocks_per_thread;
-    int *cum_blocks;
+    int blocks_per_thread[nthreads];
+    int cum_blocks[nthreads + 1];
     int remainder_blocks;
-    struct thread_data *thread_data_array;
-    int nthread;
     
-    nthread = ncores; //jf_thread1_ncore(-1); // trouble!
-    
-    Mem0(blocks_per_thread, nthread);
-    Mem0(cum_blocks, nthread + 1);
-    Mem0(thread_data_array, nthread);
-
     pthread_attr_t attr;
-	pthread_t threads[nthread];
+	pthread_t threads[nthreads];
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-    remainder_blocks = nblocks - (nblocks/nthread)*nthread;
+    remainder_blocks = nblocks - (nblocks/nthreads)*nthreads;
 #if VERBOSE
-    printf("NUM_THREADS: %d, nblocks: %d \n", nthread, nblocks);
+    printf("nthreads: %d, nblocks: %d \n", nthreads, nblocks);
     printf("remainder_blocks: %d \n", remainder_blocks);
 #endif
     
     cum_blocks[0] = 0;
-    for (int th_ndx = 0; th_ndx < nthread; th_ndx++) {
-        blocks_per_thread[th_ndx] = nblocks/nthread;
+    for (int th_ndx = 0; th_ndx < nthreads; th_ndx++) {
+        blocks_per_thread[th_ndx] = nblocks/nthreads;
         if (th_ndx < remainder_blocks) {
             blocks_per_thread[th_ndx]++;
         }
         cum_blocks[th_ndx + 1] = cum_blocks[th_ndx] + blocks_per_thread[th_ndx];
 #if VERBOSE
-        printf("for thread %d: blocks_per_thread : %d, cum_blocks_per_thread : %d \n", th_ndx+1, blocks_per_thread[th_ndx], cum_blocks[th_ndx+1]);
+        printf("cum_blocks_per_thread for %d : %d \n", th_ndx+1, cum_blocks[th_ndx+1]);
 #endif
     }
 #if VERBOSE
-    /*
+    
     printf("rhs vals: \n");
     for (int jj = 0; jj < block_size; jj++) {
         printf("rhs[%d] = %d \n", jj, *(rhs_real_ptr + jj) );
-    } */
+    }
 #endif
     
-    for (int th_id = 0; th_id < nthread; th_id++) {
+    for (int th_id = 0; th_id < nthreads; th_id++) {
         thread_data_array[th_id].thread_id = th_id;
         thread_data_array[th_id].block_size = block_size;
         thread_data_array[th_id].subdiag_ptr = subdiag_ptr;
@@ -312,23 +262,16 @@ float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr
         }
         thread_data_array[th_id].num_blocks_for_me = blocks_per_thread[th_id];
 #if VERBOSE
-        printf("num runs for th_id %d : %d \n", th_id, thread_data_array[th_id].num_blocks_for_me);
         printf(" th_id: %d, rhs ptr: %d, curr ptr: %d \n \n", th_id, rhs_real_ptr, thread_data_array[th_id].rhsr_ptr);
 #endif
         rc = pthread_create(&threads[th_id], &attr, (void *) &tridiag_inv_loop_thr, (void *) &(thread_data_array[th_id]));
     }
-    //jf_thread1_top(tridiag_inv_loop_thr, NULL, &thread_data_array, nthread, 0);
-    
-    Free0(blocks_per_thread);
-    Free0(cum_blocks);
-    Free0(thread_data_array);
-    
     Ok
 }
 
 
 // intermediate GateWay routine 
-static sof tridiag_inv_varnthread_mex_gw(
+static sof tridiag_inv_mex_gw(
 int nlhs, mxArray *plhs[],
 int nrhs, Const mxArray *prhs[])
 {
@@ -337,29 +280,17 @@ int nrhs, Const mxArray *prhs[])
     float *sup;
     float *rhs;
     float *rhs_imag;
-    int *ncores;
-
     size_t N;                   /* size of tridiag matrix */
     size_t M;                   /* numcols of rhs matrix */
     float *x_real;                  /* output */
     float *x_imag;                  /* output */
+    int *ncores;
     
-	if (nrhs != 5 ) { // hard coding :(
-        printf("Incorrect number of inputs. \n");
-		tridiag_inv_varnthread_mex_help();
+	if (nrhs != 5 ) {
+		tridiag_inv_mex_help();
 		Fail(Usage)
 	}
 
-	// todo: check lengths of vectors
-	
-    // todo: check type of inputs
-    if ( (mxIsSingle(prhs[0]) == 0) || (mxIsSingle(prhs[1]) == 0) || (mxIsSingle(prhs[2]) == 0) ) {
-        tridiag_inv_varnthread_mex_help();
-        printf("Inputs need to be single precision. \n ");
-        //Call(mxu_arg, (nrhs, prhs))
-        Fail(Usage)
-    }
-    
     check_types_and_sizes(prhs);
     
     sub = (float *) mxGetData(prhs[0]);
@@ -393,18 +324,18 @@ int nrhs, Const mxArray *prhs[])
         printf("problem: only one NULL vec, should be both or neither");
     }
     
-	Call(tridiag_inv_varnthread_mex_thr, (sub, diag, sup, rhs, rhs_imag, N, M, x_real, x_imag, *ncores));
-    Ok
+	Call(tridiag_inv_mex_thr, (sub, diag, sup, rhs, rhs_imag, N, M, x_real, x_imag, *ncores));
+	Ok
 }
 
 // gateway routine 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 	if (!nlhs && !nrhs) {
-		tridiag_inv_varnthread_mex_help();
+		tridiag_inv_mex_help();
 		return;
 	}
-	if (!tridiag_inv_varnthread_mex_gw(nlhs, plhs, nrhs, prhs))
+	if (!tridiag_inv_mex_gw(nlhs, plhs, nrhs, prhs))
 		mexErrMsgTxt("tridiag_inv_mex");
 }
 

@@ -12,7 +12,7 @@
 
 #define Usage "usage error. see above"
 #define NUM_THREADS 2 // number of cores // 4 for iv1, 2 for vega
-#define VERBOSE true
+#define VERBOSE false
 
 
 static void tridiag_inv_mex_help(void)
@@ -32,7 +32,7 @@ static void tridiag_inv_mex_help(void)
 
 struct thread_data
 {
-	int thread_id;
+    int thread_id;
 	int block_size;
     int num_blocks_for_me;
 	float *subdiag_ptr;
@@ -68,8 +68,6 @@ static sof tridiag_inv(float *a, float *b, float *c, float *d, int N, float *x, 
 	for (ii = N-2; ii >= 0; ii--) {
         x[ii] = new_d[ii] - new_c[ii] * x[ii + 1];
 	}
-
-
 	Ok
 }
 
@@ -91,7 +89,6 @@ static sof tridiag_inv_loop_thr(void *threadarg)
     float *new_c;
     float *new_d;
     
-
     my_data = (struct thread_data *) threadarg;
     taskid = my_data -> thread_id;
     N = my_data -> block_size;
@@ -115,9 +112,9 @@ static sof tridiag_inv_loop_thr(void *threadarg)
         
         printf("address of rhs: %d, incr by %d,  new addr: %d, float size: %d \n", dr, N, dr+N, sizeof(float));
         printf("rhs vals: \n");
-        for (int jj = 0; jj < N; jj++) {
+/*        for (int jj = 0; jj < N; jj++) {
             printf("rhs[%d] = %d \n", jj, dr[jj]);
-        }
+        } */
 #endif
         tridiag_inv(a, b, c, dr, N, xr, new_c, new_d);
         dr += N;
@@ -211,9 +208,7 @@ Const mxArray *prhs[]
 static sof tridiag_inv_mex_thr(
 float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr, float *rhs_imag_ptr, mwSize block_size, mwSize nblocks, float *out_real_ptr, float *out_imag_ptr)
 {
-	int big_N; // total number of entries, N*nblocks
 	int rc;
-	long t;
     int block_ndx;
     int blocks_per_thread[NUM_THREADS];
     int cum_blocks[NUM_THREADS + 1];

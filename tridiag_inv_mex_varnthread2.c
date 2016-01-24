@@ -2,7 +2,7 @@
  Matlab mex file for tridiagonal solver 2013-11-09
  T * x = y
  assumes real tridiagonal matrix T, rhs y is formulated as NxM matrix, computes M columns of x in parallel
- */
+*/
 
 #include "mex.h"
 #include "defs-env.h"
@@ -11,22 +11,22 @@
 #include "pthread.h"
 
 #define Usage "usage error. see above"
-#define VERBOSE true
+#define VERBOSE false
 
 
 static void tridiag_inv_mex_help(void)
 {
     printf("\n\
-           Usage for tridiag_inv_mex: \n\
-           output = tridiag_inv_mex(subdiag, diagvals, supdiag, argum) \n\
-           \n\
+    Usage for tridiag_inv_mex: \n\
+    output = tridiag_inv_mex(subdiag, diagvals, supdiag, argum) \n\
+    \n\
            T * x = y \n\
            \n\
            subdiag: (single, real) [N-1 1] -1st subdiagonal values of T \n\
            diagvals: (single, real) [N 1] diagonal values of T \n\
            supdiag: (single, real) [N-1 1] 1st diagonal values of T \n\
            argum: (single) [N M] rhs of inverse problem, y \n\
-           \n");
+    \n");
 }
 
 struct thread_data
@@ -65,8 +65,6 @@ static sof tridiag_inv(float *a, float *b, float *c, float *d, int N, float *x, 
     for (ii = N-2; ii >= 0; ii--) {
         x[ii] = new_d[ii] - new_c[ii] * x[ii + 1];
     }
-    
-    
     Ok
 }
 
@@ -87,7 +85,6 @@ static sof tridiag_inv_loop_thr(void *threadarg)
     float *xi;
     float *new_c;
     float *new_d;
-    
     
     my_data = (struct thread_data *) threadarg;
     taskid = my_data -> thread_id;
@@ -112,9 +109,9 @@ static sof tridiag_inv_loop_thr(void *threadarg)
         
         printf("address of rhs: %d, incr by %d,  new addr: %d, float size: %d \n", dr, N, dr+N, sizeof(float));
         printf("rhs vals: \n");
-        for (int jj = 0; jj < N; jj++) {
+/*        for (int jj = 0; jj < N; jj++) {
             printf("rhs[%d] = %d \n", jj, dr[jj]);
-        }
+        } */
 #endif
         tridiag_inv(a, b, c, dr, N, xr, new_c, new_d);
         dr += N;
@@ -134,8 +131,8 @@ static sof tridiag_inv_loop_thr(void *threadarg)
 
 // check_types_and_sizes()
 static sof check_types_and_sizes(
-                                 Const mxArray *prhs[]
-                                 )
+Const mxArray *prhs[]
+)
 {
     int Nsub;
     int Msub;
@@ -206,19 +203,23 @@ static sof check_types_and_sizes(
 // currently assume all inputs real
 // wrapper function for thread
 static sof tridiag_inv_mex_thr(
-                               float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr, float *rhs_imag_ptr, mwSize block_size, mwSize nblocks, float *out_real_ptr, float *out_imag_ptr, int nthreads)
+float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr, float *rhs_imag_ptr, mwSize block_size, mwSize nblocks, float *out_real_ptr, float *out_imag_ptr, int nthreads)
 {
-    int big_N; // total number of entries, N*nblocks
     int rc;
-    long t;
     int block_ndx;
+//    int blocks_per_thread[nthreads];
+//    int cum_blocks[nthreads + 1];
+    int remainder_blocks;
+//    struct thread_data thread_data_array[nthreads];
+    nthreads = 4;
+    
     int blocks_per_thread[nthreads];
     int cum_blocks[nthreads + 1];
-    int remainder_blocks;
     struct thread_data thread_data_array[nthreads];
+    pthread_t threads[nthreads];
     
     pthread_attr_t attr;
-    pthread_t threads[nthreads];
+//    pthread_t threads[nthreads];
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     
@@ -241,10 +242,10 @@ static sof tridiag_inv_mex_thr(
     }
 #if VERBOSE
     
-    printf("rhs vals: \n");
+/*    printf("rhs vals: \n");
     for (int jj = 0; jj < block_size; jj++) {
         printf("rhs[%d] = %d \n", jj, *(rhs_real_ptr + jj) );
-    }
+    } */
 #endif
     
     for (int th_id = 0; th_id < nthreads; th_id++) {
@@ -274,8 +275,7 @@ static sof tridiag_inv_mex_thr(
 
 // intermediate GateWay routine
 static sof tridiag_inv_mex_gw(
-                              int nlhs, mxArray *plhs[],
-                              int nrhs, Const mxArray *prhs[])
+int nlhs, mxArray *plhs[], int nrhs, Const mxArray *prhs[])
 {
     float *sub;              /* input subdiagonal */
     float *diag;               /* 1xN input diagonal */
