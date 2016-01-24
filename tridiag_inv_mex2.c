@@ -44,7 +44,7 @@ struct thread_data
     float *outi_ptr;
 };
 
-struct thread_data thread_data_array[NUM_THREADS];
+//struct thread_data thread_data_array3[NUM_THREADS];
 
 // tridiag_inv()
 // tridiag solver over one block
@@ -194,6 +194,10 @@ Const mxArray *prhs[]
         printf("rhs must be single \n");
         pass = 0;
     }
+    if (!mxIsClass(prhs[4], "int16")) {
+        printf("ncores must be int16 \n");
+        pass = 0;
+    }
 	if (!pass) {
         printf("\n");
 		tridiag_inv_mex_help();
@@ -209,6 +213,9 @@ Const mxArray *prhs[]
 static sof tridiag_inv_mex_thr(
 float *subdiag_ptr, float *diagvals_ptr, float *supdiag_ptr, float *rhs_real_ptr, float *rhs_imag_ptr, mwSize block_size, mwSize nblocks, float *out_real_ptr, float *out_imag_ptr, int nthreads)
 {
+    struct thread_data *thread_data_array;
+    thread_data_array = (struct thread_data *) calloc (nthreads, sizeof(struct thread_data));
+    
 	int rc;
     int block_ndx;
     int blocks_per_thread[nthreads];

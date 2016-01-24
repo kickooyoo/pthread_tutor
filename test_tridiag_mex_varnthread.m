@@ -4,7 +4,7 @@
 N = 50; % 256
 M = 30; % 256
 scale = 10;
-ncores = int16(2);%int16(jf('ncore'));
+ncores = int16(4);%int16(jf('ncore'));
 nrep = 200;
 for jj = 1:nrep
     rng(jj);
@@ -48,26 +48,39 @@ end
 % equivs(x1, x2)
 return;
 %% timing test
-nrep = 4;
-ncores = int16(1:jf('ncore'));
+nrep = 6;
+warmup = 4;
+ncores = int16(jf('ncore'));
 ncores = int16(2);
 for ii = 1:ncores
         ncore = int16(jf('ncore'));
         for jj = 1:nrep
-                tic
-                T = diag(a,-1) + diag(b) + diag(c,1);
-                x0 = T\d;
-                bs_toc(ii,jj) = toc;
+            tic
+            T = diag(a,-1) + diag(b) + diag(c,1);
+            x0 = T\d;
+            if (jj > warmup)
+                bs_toc(ii,jj-warmup) = toc;
+            else
+                toc
+            end
         end
         for jj = 1:nrep
-                tic
-                x1 = ir_apply_tridiag_inv(a, b, c, d);
-                ir_toc(ii,jj) = toc;
+            tic
+            x1 = ir_apply_tridiag_inv(a, b, c, d);
+            if (jj > warmup)
+                ir_toc(ii,jj-warmup) = toc;
+            else
+                toc
+            end
         end
         for jj = 1:nrep
-                tic
-                x2 = tridiag_inv_mex2(a, b, c, d, ii);
-                pth_toc(ii,jj) = toc;
+            tic
+            x2 = tridiag_inv_mex2(a, b, c, d, ii);
+            if (jj > warmup)
+                pth_toc(ii,jj-warmup) = toc;
+            else
+                toc
+            end
         end
 end
 
