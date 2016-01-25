@@ -260,7 +260,7 @@ int nrhs, Const mxArray *prhs[])
 {
     	float *sub;              /* input subdiagonal */
     	float *diag;               /* 1xN input diagonal */
-   	 float *sup;
+   	float *sup;
     	float *rhs;
     	float *rhs_imag;
     	size_t N;                   /* size of tridiag matrix */
