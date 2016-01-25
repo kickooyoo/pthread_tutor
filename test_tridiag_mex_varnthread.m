@@ -1,11 +1,12 @@
 %% test tridiag mex
 %% check value against \ and ir_apply_tridiag
 
+if 0
 N = 50; % 256
-M = 30; % 256
+M = 3; % 256
 scale = 10;
 ncores = int16(4);%int16(jf('ncore'));
-nrep = 200;
+nrep = 4;
 for jj = 1:nrep
     rng(jj);
     % hyperthreading means up to 160 on mpel
@@ -30,11 +31,12 @@ for jj = 1:nrep
     
     try
 %         x2 = tridiag_inv_mex_varnthread2(a, b, c, d, ncores);
-        x2 = tridiag_inv_mex2(a, b, c, d, ncores);
+        x2 = tridiag_inv_mex_varnthread(a, b, c, d, ncores);
     catch
         display('tridiag_inv_mex_varnthread2.c failed');
     end
-%     err(jj) = norm(x0-x2)/N;
+	norm(x0-x2)
+    err(jj) = norm(x0-x2)/N;
 end
 % if any(err > 1e-3)
 %     display('bad err');
@@ -46,14 +48,16 @@ end
 % norm(x1-x2)
 % equivs(x0, x2)
 % equivs(x1, x2)
-return;
+%`return;
+
+end
 %% timing test
-nrep = 6;
+display('timing test');
+nrep = 12;
 warmup = 4;
-ncores = int16(jf('ncore'));
-ncores = int16(2);
+%ncores = int16(jf('ncore'));
+ncores = int16([8]);% 8 16]);
 for ii = 1:ncores
-        ncore = int16(jf('ncore'));
         for jj = 1:nrep
             tic
             T = diag(a,-1) + diag(b) + diag(c,1);
@@ -64,7 +68,8 @@ for ii = 1:ncores
                 toc
             end
         end
-        for jj = 1:nrep
+        if 1 
+	for jj = 1:nrep
             tic
             x1 = ir_apply_tridiag_inv(a, b, c, d);
             if (jj > warmup)
@@ -73,9 +78,10 @@ for ii = 1:ncores
                 toc
             end
         end
+	end
         for jj = 1:nrep
             tic
-            x2 = tridiag_inv_mex2(a, b, c, d, ii);
+            x2 = tridiag_inv_mex_varnthread(a, b, c, d, ii);
             if (jj > warmup)
                 pth_toc(ii,jj-warmup) = toc;
             else
