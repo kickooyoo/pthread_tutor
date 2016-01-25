@@ -1,7 +1,7 @@
 %% test tridiag mex
 %% check value against \ and ir_apply_tridiag
 
-if 0
+if 1
 N = 50; % 256
 M = 3; % 256
 scale = 10;
