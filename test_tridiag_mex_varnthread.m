@@ -56,7 +56,7 @@ display('timing test');
 nrep = 12;
 warmup = 4;
 %ncores = int16(jf('ncore'));
-ncores = int16([8]);% 8 16]);
+ncores = int16([24]);% 8 16]);
 for ii = 1:ncores
         for jj = 1:nrep
             tic
