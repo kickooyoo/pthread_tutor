@@ -71,7 +71,7 @@ float *new_d) // work
 		new_d[ii] = (d[ii] - new_d[ii - 1] * a_prev) / (b[ii] - new_c_prev * a_prev);
 	}
 	new_d[N - 1] = (d[N - 1] - new_d[N - 2] * (a[N - 2])) / (b[N - 1] - new_c[N - 2] * (a[N - 2]));
-
+	
 	x[N - 1] = new_d[N - 1];
 	for (int ii = N-2; ii >= 0; ii--)
 		x[ii] = new_d[ii] - new_c[ii] * x[ii + 1];
@@ -114,10 +114,7 @@ static sof tridiag_inv_loop_thr(void *threadarg)
 			xi += N;
 		}
 	}
-
 	Free0(new_c)
-	Free0(new_d)
-
 	Ok
 }
 
@@ -134,8 +131,8 @@ static void *tridiag_inv_loop_thr_void(void *threadarg)
 
 // check_types_and_sizes()
 static sof check_types_and_sizes(
-Const mxArray *prhs[]
-)
+				 Const mxArray *prhs[]
+				 )
 {
 	cint Nsub = mxGetM(prhs[0]);
 	cint Msub = mxGetN(prhs[0]);
@@ -144,8 +141,7 @@ Const mxArray *prhs[]
 	cint Nsup = mxGetM(prhs[2]);
 	cint Msup = mxGetN(prhs[2]);
 	cint Nrhs = mxGetM(prhs[3]);
-    
-	int pass = 1;
+    	int pass = 1;
 	if (!((Nsub == Nrhs - 1) && (Msub == 1)) && !((Nsub == 1) && (Msub == Nrhs - 1))) {
 		printf("subdiag size [%d %d] does not match rhs length of %d \n", Nsub, Msub, Nrhs);
 		pass = 0;
@@ -191,12 +187,16 @@ Const mxArray *prhs[]
         	printf("ncores must be int32\n");
         	pass = 0;
     	}
+	/*	if (!mxIsClass(prhs[4], "int32")) {
+		printf("ncores must be int32 \n");
+		pass = 0;
+	 } */
    	if (!pass) {
         	printf("\n");
 		tridiag_inv_mex_help();
         	Fail(Usage)
 	}
-    	Ok
+	Ok
 }
 
 
@@ -214,7 +214,7 @@ cint nthreads)
 //	struct thread_data *thread_data_array
 //	= (struct thread_data *) calloc (nthreads, sizeof(struct thread_data));
 	struct thread_data *thread_data_array;
-	Note("nthreads = %d", nthreads)
+	//Note("nthreads = %d", nthreads)
 	Mem0(thread_data_array, nthreads)
 #endif
 //	struct thread_data thread_data_array[nthreads];
@@ -247,11 +247,11 @@ cint nthreads)
         	thread_data_array[th_id].rhsr_ptr = rhs_real_ptr + cum_blocks[th_id] * block_size;
         	thread_data_array[th_id].outr_ptr = out_real_ptr + cum_blocks[th_id] * block_size;
         	if (rhs_imag_ptr != NULL) {
-            	thread_data_array[th_id].rhsi_ptr = rhs_imag_ptr + cum_blocks[th_id] * block_size;
-            	thread_data_array[th_id].outi_ptr = out_imag_ptr + cum_blocks[th_id] * block_size;
+			thread_data_array[th_id].rhsi_ptr = rhs_imag_ptr + cum_blocks[th_id] * block_size;
+			thread_data_array[th_id].outi_ptr = out_imag_ptr + cum_blocks[th_id] * block_size;
         	} else {
-            	thread_data_array[th_id].rhsi_ptr = NULL;
-            	thread_data_array[th_id].outi_ptr = NULL;
+			thread_data_array[th_id].rhsi_ptr = NULL;
+			thread_data_array[th_id].outi_ptr = NULL;
         	}
         	thread_data_array[th_id].num_blocks_for_me = blocks_per_thread[th_id];
 //		Note("num_blocks_for_me[%d] = %d", th_id, thread_data_array[th_id].num_blocks_for_me)
@@ -262,36 +262,35 @@ cint nthreads)
 			(void *) (thread_data_array + th_id));
 		if (rc) Fail("pthread_create")
     	}
-
-    	for (int it = 0; it < nthreads; it++)
-	{
-		if (pthread_join(threads[it], NULL))
-			Fail1("pthread_join %d failed", it)
-
+	for (int th_id = 0; th_id < nthreads; th_id++) {
+		cint rc = pthread_join(threads[th_id], NULL);
+		if (rc) {
+			printf("ERROR; return code from pthread_join() is %d\n", rc);
+			exit(-1);
+		}
 	}
-
 #if !GLOBAL
-    free(thread_data_array);
+	free(thread_data_array);
 #endif
-    Ok
+	Ok
 }
 
 
 // intermediate GateWay routine 
 static sof tridiag_inv_mex_gw(
-int nlhs, mxArray *plhs[],
-int nrhs, Const mxArray *prhs[])
+			      int nlhs, mxArray *plhs[],
+			      int nrhs, Const mxArray *prhs[])
 {
-    	float *sub;              /* input subdiagonal */
-    	float *diag;               /* 1xN input diagonal */
-   	 float *sup;
-    	float *rhs;
-    	float *rhs_imag;
-    	size_t N;                   /* size of tridiag matrix */
-    	size_t M;                   /* numcols of rhs matrix */
-    
+	float *sub;              /* input subdiagonal */
+	float *diag;               /* 1xN input diagonal */
+	float *sup;
+	float *rhs;
+	float *rhs_imag;
+	int N;                   /* size of tridiag matrix */
+	int M;                   /* numcols of rhs matrix */
+	
 	if (nrhs != 5 ) {
-        printf("Incorrect number of inputs. \n");
+		printf("Incorrect number of inputs. \n");
 		tridiag_inv_mex_help();
 		Fail(Usage)
 	}
@@ -312,7 +311,6 @@ int nrhs, Const mxArray *prhs[])
         	ncores = MAX_THREADS;
     	}
     
-	// output
     	if (mxIsComplex(prhs[3])) {
         	rhs_imag = (float *) mxGetImagData(prhs[3]);
        		plhs[0] = mxCreateNumericMatrix(N, M, mxSINGLE_CLASS, mxCOMPLEX);

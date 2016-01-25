@@ -5,8 +5,8 @@ if 1
 N = 50; % 256
 M = 3; % 256
 scale = 10;
-ncores = int16(4);%int16(jf('ncore'));
-nrep = 4;
+ncores = int32(4);%int16(jf('ncore'));
+nrep = 2;
 for jj = 1:nrep
     rng(jj);
     % hyperthreading means up to 160 on mpel
@@ -27,13 +27,12 @@ for jj = 1:nrep
     x1 = ir_apply_tridiag_inv(a, b, c, d);
     
     % compile as needed
-    % mex -O CFLAGS="\$CFLAGS -std=c99" -I./def/ tridiag_inv_mex_varnthread2.c
+    % mex -O CFLAGS="\$CFLAGS -std=c99 -DMmex" -I./def/ tridiag_inv_mex_varnthread.c
     
     try
-%         x2 = tridiag_inv_mex_varnthread2(a, b, c, d, ncores);
         x2 = tridiag_inv_mex_varnthread(a, b, c, d, ncores);
     catch
-        display('tridiag_inv_mex_varnthread2.c failed');
+        display('tridiag_inv_mex_varnthread.c failed');
     end
 	norm(x0-x2)
     err(jj) = norm(x0-x2)/N;
@@ -48,53 +47,46 @@ end
 % norm(x1-x2)
 % equivs(x0, x2)
 % equivs(x1, x2)
-%`return;
+% return;
 
 end
 %% timing test
-display('timing test');
-nrep = 12;
+nrep = 16;
 warmup = 4;
 %ncores = int16(jf('ncore'));
-ncores = int16([24]);% 8 16]);
+ncores = int32([4]);% 8 16]);
 for ii = 1:ncores
-        for jj = 1:nrep
-            tic
-            T = diag(a,-1) + diag(b) + diag(c,1);
-            x0 = T\d;
-            if (jj > warmup)
-                bs_toc(ii,jj-warmup) = toc;
-            else
-                toc
-            end
+    for jj = 1:nrep
+        if (jj > warmup) tic; end
+        T = sparse(double(diag(a,-1) + diag(b) + diag(c,1)));
+        x0 = T\double(d);
+        if (jj > warmup)
+            bs_toc(ii,jj-warmup) = toc;
         end
-        if 1 
-	for jj = 1:nrep
-            tic
+    end
+    if 1
+        for jj = 1:nrep
+            if (jj > warmup) tic; end
             x1 = ir_apply_tridiag_inv(a, b, c, d);
             if (jj > warmup)
                 ir_toc(ii,jj-warmup) = toc;
-            else
-                toc
             end
         end
-	end
-        for jj = 1:nrep
-            tic
-            x2 = tridiag_inv_mex_varnthread(a, b, c, d, ii);
-            if (jj > warmup)
-                pth_toc(ii,jj-warmup) = toc;
-            else
-                toc
-            end
+    end
+    for jj = 1:nrep
+        if (jj > warmup) tic; end
+        x2 = tridiag_inv_mex_varnthread(a, b, c, d, ii);
+        if (jj > warmup)
+            pth_toc(ii,jj-warmup) = toc;
         end
+    end
 end
 
 figure; plot(1:ncores, mean(bs_toc,2));
 hold on; plot(1:ncores, mean(ir_toc,2),'r');
 hold on; plot(1:ncores, mean(pth_toc,2),'g');
-
-return;
+legend('backslash', 'ir apply', 'pthread');
+ return;
 %% bad inputs
 
 % mixed row and col vectors for a, b, c OK
