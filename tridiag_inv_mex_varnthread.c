@@ -11,11 +11,7 @@
 #include "defs-env.h"
 #include "jf,mex,def.h"
 #include "pthread.h"
-
 #define Usage "usage error. see above"
-#define MAX_THREADS 32
-#define GLOBAL false //if false creates seg fault on mac
-
 
 static void tridiag_inv_mex_help(void)
 {
@@ -46,11 +42,6 @@ struct thread_data
 	float *outr_ptr;
 	float *outi_ptr;
 };
-
-#if GLOBAL
-struct thread_data thread_data_array[MAX_THREADS];
-#endif
-
 
 // tridiag_inv()
 // tridiag solver over one block
@@ -210,14 +201,9 @@ float *out_real_ptr,
 float *out_imag_ptr,
 cint nthreads)
 {
-#if !GLOBAL
-//	struct thread_data *thread_data_array
-//	= (struct thread_data *) calloc (nthreads, sizeof(struct thread_data));
 	struct thread_data *thread_data_array;
 	//Note("nthreads = %d", nthreads)
 	Mem0(thread_data_array, nthreads)
-#endif
-//	struct thread_data thread_data_array[nthreads];
     	int blocks_per_thread[nthreads];
     	int cum_blocks[nthreads + 1];
     
@@ -269,9 +255,7 @@ cint nthreads)
 			exit(-1);
 		}
 	}
-#if !GLOBAL
-	free(thread_data_array);
-#endif
+	Free0(thread_data_array);
 	Ok
 }
 
@@ -304,12 +288,6 @@ static sof tridiag_inv_mex_gw(
 	int ncores = ((int *) mxGetData(prhs[4]))[0];
     	N = mxGetM(prhs[3]);
     	M = mxGetN(prhs[3]);
-    
-    	if (ncores > MAX_THREADS) {
-        	printf("ncores:%d > MAX_THREADS: %d, truncated to %d \n",
-			ncores, MAX_THREADS, MAX_THREADS);
-        	ncores = MAX_THREADS;
-    	}
     
     	if (mxIsComplex(prhs[3])) {
         	rhs_imag = (float *) mxGetImagData(prhs[3]);

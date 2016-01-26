@@ -3,10 +3,10 @@
 
 if 1
 N = 50; % 256
-M = 3; % 256
+M = 30; % 256
 scale = 10;
 ncores = int32(4);%int16(jf('ncore'));
-nrep = 2;
+nrep = 20;
 for jj = 1:nrep
     rng(jj);
     % hyperthreading means up to 160 on mpel
@@ -34,7 +34,7 @@ for jj = 1:nrep
     catch
         display('tridiag_inv_mex_varnthread.c failed');
     end
-	norm(x0-x2)
+%	norm(x0-x2)
     err(jj) = norm(x0-x2)/N;
 end
 % if any(err > 1e-3)
@@ -53,8 +53,8 @@ end
 %% timing test
 nrep = 16;
 warmup = 4;
-%ncores = int16(jf('ncore'));
-ncores = int32([4]);% 8 16]);
+ncores = int32(jf('ncore'));
+%ncores = int32([20]);% 8 16]);
 for ii = 1:ncores
     for jj = 1:nrep
         if (jj > warmup) tic; end
