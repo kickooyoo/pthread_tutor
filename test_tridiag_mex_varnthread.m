@@ -90,14 +90,14 @@ legend('backslash', 'ir apply', 'pthread');
 %% bad inputs
 
 % mixed row and col vectors for a, b, c OK
-x3 = tridiag_inv_mex_varnthread2(a, b', c, d, ncores);
+x3 = tridiag_inv_mex_varnthread(a, b', c, d, ncores);
 
 % bad sizes
-x3 = tridiag_inv_mex_varnthread2(a(3:end), b, c, d, ncores);
-x3 = tridiag_inv_mex_varnthread2(a, b, [c; 1; -1], d, ncores);
-x3 = tridiag_inv_mex_varnthread2(a, b, c, scale*rand(N+1, M), ncores);
+x3 = tridiag_inv_mex_varnthread(a(3:end), b, c, d, ncores);
+x3 = tridiag_inv_mex_varnthread(a, b, [c; 1; -1], d, ncores);
+x3 = tridiag_inv_mex_varnthread(a, b, c, scale*rand(N+1, M), ncores);
 
 % bad types
-x3 = tridiag_inv_mex_varnthread2(double(a), b, c, d, ncores);
-x3 = tridiag_inv_mex_varnthread2(a, b, c, double(d), ncores);
-x3 = tridiag_inv_mex_varnthread2(a, int16(b), c, d, ncores);
+x3 = tridiag_inv_mex_varnthread(double(a), b, c, d, ncores);
+x3 = tridiag_inv_mex_varnthread(a, b, c, double(d), ncores);
+x3 = tridiag_inv_mex_varnthread(a, int16(b), c, d, ncores);

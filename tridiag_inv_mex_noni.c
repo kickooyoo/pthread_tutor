@@ -20,16 +20,17 @@
 static void tridiag_inv_mex_help(void)
 {
 	printf("\n\
-	Usage for tridiag_inv_mex_varnthread: \n\
-	output = tridiag_inv_mex_varnthread(subdiag, diagvals, supdiag, argum, ncores) \n\
+	Usage for tridiag_inv_mex_noni: \n\
+	output = tridiag_inv_mex_noni(subdiag, diagvals, supdiag, argum, ncores) \n\
 	\n\
 		T * x = y \n\
 	\n\
-		subdiag: (single, real) [N-1 1] -1st subdiagonal values of T \n\
-		diagvals: (single, real) [N 1] diagonal values of T \n\
-		supdiag: (single, real) [N-1 1] 1st diagonal values of T \n\
+		subdiag: (single, real) [N-1 M] -1st subdiagonal values of T \n\
+		diagvals: (single, real) [N M] diagonal values of T \n\
+		supdiag: (single, real) [N-1 M] 1st diagonal values of T \n\
 		argum: (single) [N M] rhs of inverse problem, y \n\
 		ncores: (int32) # of threads \n\
+		output: (single) [N*M 1] \n\
 	\n");
 }
 
@@ -105,14 +106,17 @@ static sof tridiag_inv_loop_thr(void *threadarg)
 	for (int ii = 0; ii < num_runs; ii++)
 	{
 		tridiag_inv(a, b, c, dr, N, xr, new_c, new_d);
-		dr += N;
-		xr += N;
 		if (xi != NULL)
 		{
 			tridiag_inv(a, b, c, di, N, xi, new_c, new_d);
 			di += N;
 			xi += N;
 		}
+		a += N - 1;
+		b += N;
+		c += N - 1;
+		dr += N;
+		xr += N;
 	}
 	Free0(new_c)
 	Ok
@@ -141,20 +145,19 @@ static sof check_types_and_sizes(
 	cint Nsup = mxGetM(prhs[2]);
 	cint Msup = mxGetN(prhs[2]);
 	cint Nrhs = mxGetM(prhs[3]);
-    	int pass = 1;
-	if (!((Nsub == Nrhs - 1) && (Msub == 1)) && !((Nsub == 1) && (Msub == Nrhs - 1))) {
-		printf("subdiag size [%d %d] does not match rhs length of %d \n", Nsub, Msub, Nrhs);
-		pass = 0;
-	}
-	if (!((Ndiag == Nrhs) && (Mdiag == 1)) && !((Ndiag == 1) && (Mdiag == Nrhs))) {
-		printf("diag size [%d %d] does not match rhs length of %d \n", Ndiag, Mdiag, Nrhs);
-		pass = 0;
-	}
-	if (!((Nsup == Nrhs - 1) && (Msup == 1)) && !((Nsup == 1) && (Msup == Nrhs - 1))) {
-		printf("supdiag size [%d %d] does not match rhs length of %d \n", Nsup, Msup, Nrhs);
-		pass = 0;
-    	}
+	cint Mrhs = mxGetN(prhs[3]);
 
+    	int pass = 1;
+	if ((Nsub != Nrhs - 1) || (Nsup != Nrhs - 1) || (Ndiag != Nrhs)) {
+		printf("diagonal sizes do not match \n");
+		tridiag_inv_mex_help();
+		pass = 0;
+	}
+	if ((Msub != Mrhs) || (Msup != Mrhs) || (Mdiag != Mrhs)) {
+		printf("block sizes do not match \n");
+		tridiag_inv_mex_help();
+		pass = 0;
+	}
     	if (mxIsComplex(prhs[0])) {
         	printf("subdiag cannot be complex \n");
         	pass = 0;
@@ -241,9 +244,10 @@ cint nthreads)
         	thread_data_array[th_id].thread_id = th_id;
         	thread_data_array[th_id].block_size = block_size;
 //        	Note("block_size[%d] = %d", th_id, thread_data_array[th_id].block_size)
-        	thread_data_array[th_id].subdiag_ptr = subdiag_ptr;
-        	thread_data_array[th_id].diagvals_ptr = diagvals_ptr;
-        	thread_data_array[th_id].supdiag_ptr = supdiag_ptr;
+        	thread_data_array[th_id].subdiag_ptr = subdiag_ptr + cum_blocks[th_id] * (block_size - 1);
+        	thread_data_array[th_id].diagvals_ptr = diagvals_ptr + cum_blocks[th_id] * block_size;
+        	thread_data_array[th_id].supdiag_ptr = supdiag_ptr + cum_blocks[th_id] * (block_size - 1);
+	//	printf("thi_id: %d, supptr: %d, supptr[0]: %f \n", th_id, thread_data_array[th_id].supdiag_ptr, (thread_data_array[th_id].supdiag_ptr) [0]);
         	thread_data_array[th_id].rhsr_ptr = rhs_real_ptr + cum_blocks[th_id] * block_size;
         	thread_data_array[th_id].outr_ptr = out_real_ptr + cum_blocks[th_id] * block_size;
         	if (rhs_imag_ptr != NULL) {
@@ -310,13 +314,16 @@ static sof tridiag_inv_mex_gw(
 			ncores, MAX_THREADS, MAX_THREADS);
         	ncores = MAX_THREADS;
     	}
+	if (ncores > M) {
+		ncores = M;
+	}
     
     	if (mxIsComplex(prhs[3])) {
         	rhs_imag = (float *) mxGetImagData(prhs[3]);
-       		plhs[0] = mxCreateNumericMatrix(N, M, mxSINGLE_CLASS, mxCOMPLEX);
+       		plhs[0] = mxCreateNumericMatrix(N * M, 1, mxSINGLE_CLASS, mxCOMPLEX);
     	} else {
         	rhs_imag = NULL;
-       		plhs[0] = mxCreateNumericMatrix(N, M, mxSINGLE_CLASS, mxREAL);
+       		plhs[0] = mxCreateNumericMatrix(N * M, 1, mxSINGLE_CLASS, mxREAL);
     	}
 
     	float *x_real = (float *) mxGetData(plhs[0]);
