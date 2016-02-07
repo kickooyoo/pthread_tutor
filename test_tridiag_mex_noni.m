@@ -1,27 +1,26 @@
 %% test tridiag mex
-%% check value against \ and ir_apply_tridiag
 
-% compile as needed
+%% compile as needed
 mex -O CFLAGS="\$CFLAGS -std=c99 -DMmex" -I./def/ tridiag_inv_mex_noni.c
     
-if 1
+%% check value against \ and ir_apply_tridiag
+
 N = 50; % 256
 M = 50; % 256
 scale = 10;
 sparse_i = cat(1, col(2:N*M), col(1:N*M), col(1:N*M-1));
 sparse_j = cat(1, col(1:N*M-1), col(1:N*M), col(2:N*M));
 
-ncores = int32(4);%int16(jf('ncore'));
-nrep = 1;
+ncores = int32(jf('ncore'));
+nrep = 20;
 
 for jj = 1:nrep
     rng(jj);
-    % hyperthreading means up to 160 on mpel
     d = scale*randn(N,M);
     d = d + 1i*scale*rand(N,M);
-    a = scale*rand(N-1,M) - scale;%-scale/2;
+    a = scale*rand(N-1,M) - scale;
     b = scale*rand(N,M) + scale*N;
-    c = scale*rand(N-1,M) - scale;%-scale/2;
+    c = scale*rand(N-1,M) - scale;
     
     d = single(d);
     a = single(a);
@@ -36,9 +35,7 @@ for jj = 1:nrep
     if (condest(T) > 1e15)
             keyboard;
     end
-%     Tf = diag(a_long, -1) + diag(b(:)) + diag(c_long, 1);
     x0 = T\double(d(:));
-%     x0b = Tf\d(:);
 
     x1 = ir_apply_tridiag_inv(a_long, b(:), c_long, d(:));
     
@@ -47,29 +44,17 @@ for jj = 1:nrep
     catch
         display('tridiag_inv_mex_varnthread.c failed');
     end
-    
-    norm(x0-x2)/(N*M)
-    norm(x1 - x2)/(N*M)
+   
     err(jj) = norm(x0-x2)/(N*M);
 end
-% if any(err > 1e-3)
-%     display('bad err');
-%     keyboard;
-% end
-
-% [col(x0) col(x2)]
-
-% norm(x1-x2)
-% equivs(x0, x2)
-% equivs(x1, x2)
-% return;
-
+if any(err > 1e-3)
+    display('bad err');
 end
+
 %% timing test
 nrep = 16;
 warmup = 4;
-%ncores = int16(jf('ncore'));
-ncores = int32([4]);% 8 16]);
+ncores = int32(jf('ncore'));
 for ii = 1:ncores
     for jj = 1:nrep
         if (jj > warmup) tic; end
@@ -101,8 +86,8 @@ figure; plot(1:ncores, mean(bs_toc,2));
 hold on; plot(1:ncores, mean(ir_toc,2),'r');
 hold on; plot(1:ncores, mean(pth_toc,2),'g');
 legend('backslash', 'ir apply', 'pthread');
- return;
-%% bad inputs
+return;
+%% test bad inputs
 
 % mixed row and col vectors for a, b, c OK
 x3 = tridiag_inv_mex_noni(a, b', c, d, ncores);

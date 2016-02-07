@@ -13,9 +13,6 @@
 #include "pthread.h"
 
 #define Usage "usage error. see above"
-#define MAX_THREADS 32
-#define GLOBAL false //if false creates seg fault on mac
-
 
 static void tridiag_inv_mex_help(void)
 {
@@ -30,7 +27,7 @@ static void tridiag_inv_mex_help(void)
 		supdiag: (single, real) [N-1 M] 1st diagonal values of T \n\
 		argum: (single) [N M] rhs of inverse problem, y \n\
 		ncores: (int32) # of threads \n\
-		output: (single) [N*M 1] \n\
+		output: (single) [N M] \n\
 	\n");
 }
 
@@ -47,11 +44,6 @@ struct thread_data
 	float *outr_ptr;
 	float *outi_ptr;
 };
-
-#if GLOBAL
-struct thread_data thread_data_array[MAX_THREADS];
-#endif
-
 
 // tridiag_inv()
 // tridiag solver over one block
@@ -88,7 +80,6 @@ static sof tridiag_inv_loop_thr(void *threadarg)
 	float *new_d;
 
 	struct thread_data *my_data = (struct thread_data *) threadarg;
-//	cint taskid = my_data -> thread_id;
 	cint N = my_data -> block_size;
 	cfloat *a = my_data -> subdiag_ptr;
 	cfloat *b = my_data -> diagvals_ptr;
@@ -98,8 +89,6 @@ static sof tridiag_inv_loop_thr(void *threadarg)
 	float *xr = my_data -> outr_ptr;
 	float *xi = my_data -> outi_ptr;
 	cint num_runs = my_data -> num_blocks_for_me;
-//	Note1("N = %d", N)
-//	Note1("num_blocks_for_me = %d", num_runs)
 	Mem0(new_c, N - 1)
 	Mem0(new_d, N)
 
@@ -119,15 +108,16 @@ static sof tridiag_inv_loop_thr(void *threadarg)
 		xr += N;
 	}
 	Free0(new_c)
+	Free0(new_d)
 	Ok
 }
 
-
+//tridiag_inv_loop_thr_void()
 static void *tridiag_inv_loop_thr_void(void *threadarg)
 {
 	if (!tridiag_inv_loop_thr(threadarg))
 	{
-		Note("uh oh")
+		Note("Failure with tridiag_inv_thread() \n")
 	}
 	return NULL;
 }
@@ -190,10 +180,6 @@ static sof check_types_and_sizes(
         	printf("ncores must be int32\n");
         	pass = 0;
     	}
-	/*	if (!mxIsClass(prhs[4], "int32")) {
-		printf("ncores must be int32 \n");
-		pass = 0;
-	 } */
    	if (!pass) {
         	printf("\n");
 		tridiag_inv_mex_help();
@@ -213,14 +199,8 @@ float *out_real_ptr,
 float *out_imag_ptr,
 cint nthreads)
 {
-#if !GLOBAL
-//	struct thread_data *thread_data_array
-//	= (struct thread_data *) calloc (nthreads, sizeof(struct thread_data));
 	struct thread_data *thread_data_array;
-	//Note("nthreads = %d", nthreads)
-	Mem0(thread_data_array, nthreads)
-#endif
-//	struct thread_data thread_data_array[nthreads];
+	Mem0(thread_data_array, nthreads);
     	int blocks_per_thread[nthreads];
     	int cum_blocks[nthreads + 1];
     
@@ -243,11 +223,9 @@ cint nthreads)
     	for (int th_id = 0; th_id < nthreads; th_id++) {
         	thread_data_array[th_id].thread_id = th_id;
         	thread_data_array[th_id].block_size = block_size;
-//        	Note("block_size[%d] = %d", th_id, thread_data_array[th_id].block_size)
-        	thread_data_array[th_id].subdiag_ptr = subdiag_ptr + cum_blocks[th_id] * (block_size - 1);
+		thread_data_array[th_id].subdiag_ptr = subdiag_ptr + cum_blocks[th_id] * (block_size - 1);
         	thread_data_array[th_id].diagvals_ptr = diagvals_ptr + cum_blocks[th_id] * block_size;
-        	thread_data_array[th_id].supdiag_ptr = supdiag_ptr + cum_blocks[th_id] * (block_size - 1);
-	//	printf("thi_id: %d, supptr: %d, supptr[0]: %f \n", th_id, thread_data_array[th_id].supdiag_ptr, (thread_data_array[th_id].supdiag_ptr) [0]);
+        	thread_data_array[th_id].supdiag_ptr = supdiag_ptr + cum_blocks[th_id] * (block_size - 1);\
         	thread_data_array[th_id].rhsr_ptr = rhs_real_ptr + cum_blocks[th_id] * block_size;
         	thread_data_array[th_id].outr_ptr = out_real_ptr + cum_blocks[th_id] * block_size;
         	if (rhs_imag_ptr != NULL) {
@@ -258,11 +236,9 @@ cint nthreads)
 			thread_data_array[th_id].outi_ptr = NULL;
         	}
         	thread_data_array[th_id].num_blocks_for_me = blocks_per_thread[th_id];
-//		Note("num_blocks_for_me[%d] = %d", th_id, thread_data_array[th_id].num_blocks_for_me)
 
 		cint rc = pthread_create(&threads[th_id], &attr,
 			tridiag_inv_loop_thr_void,
-//			(void *) &(thread_data_array[th_id]));
 			(void *) (thread_data_array + th_id));
 		if (rc) Fail("pthread_create")
     	}
@@ -273,9 +249,7 @@ cint nthreads)
 			exit(-1);
 		}
 	}
-#if !GLOBAL
-	free(thread_data_array);
-#endif
+	Free0(thread_data_array);
 	Ok
 }
 
@@ -309,21 +283,16 @@ static sof tridiag_inv_mex_gw(
     	N = mxGetM(prhs[3]);
     	M = mxGetN(prhs[3]);
     
-    	if (ncores > MAX_THREADS) {
-        	printf("ncores:%d > MAX_THREADS: %d, truncated to %d \n",
-			ncores, MAX_THREADS, MAX_THREADS);
-        	ncores = MAX_THREADS;
-    	}
 	if (ncores > M) {
 		ncores = M;
 	}
     
     	if (mxIsComplex(prhs[3])) {
         	rhs_imag = (float *) mxGetImagData(prhs[3]);
-       		plhs[0] = mxCreateNumericMatrix(N * M, 1, mxSINGLE_CLASS, mxCOMPLEX);
+       		plhs[0] = mxCreateNumericMatrix(N, M, mxSINGLE_CLASS, mxCOMPLEX);
     	} else {
         	rhs_imag = NULL;
-       		plhs[0] = mxCreateNumericMatrix(N * M, 1, mxSINGLE_CLASS, mxREAL);
+       		plhs[0] = mxCreateNumericMatrix(N, M, mxSINGLE_CLASS, mxREAL);
     	}
 
     	float *x_real = (float *) mxGetData(plhs[0]);
