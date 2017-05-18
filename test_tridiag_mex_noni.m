@@ -1,19 +1,18 @@
 %% test tridiag mex
 
 %% compile as needed
-mex -O CFLAGS="\$CFLAGS -std=c99 -DMmex" -I./def/ tridiag_inv_mex_noni.c
-    
+mex COPTIMFLAGS='-O3' CFLAGS="\$CFLAGS -std=c99 -DMmex" -I./def/ tridiag_inv_mex_noni.c
 %% check value against \ and ir_apply_tridiag
 
-N = 50; % 256
-M = 50; % 256
+N = 2048;
+M = 256;%1024;
 scale = 10;
 sparse_i = cat(1, col(2:N*M), col(1:N*M), col(1:N*M-1));
 sparse_j = cat(1, col(1:N*M-1), col(1:N*M), col(2:N*M));
 
 ncores = int32(jf('ncore'));
 nrep = 20;
-
+nrep = 1;
 for jj = 1:nrep
     rng(jj);
     d = scale*randn(N,M);
@@ -45,7 +44,7 @@ for jj = 1:nrep
         display('tridiag_inv_mex_varnthread.c failed');
     end
    
-    err(jj) = norm(x0-x2)/(N*M);
+    err(jj) = norm(x0(:) - x2(:))/(N*M);
 end
 if any(err > 1e-3)
     display('bad err');
@@ -54,8 +53,11 @@ end
 %% timing test
 nrep = 16;
 warmup = 4;
-ncores = int32(jf('ncore'));
-for ii = 1:ncores
+max_cores = jf('ncore');
+nthreads = int32(2.^[0 : floor(log2(max_cores)) + 1]);
+%nthreads = int32(1:max_cores);
+for ii = 1:length(nthreads)
+    nthread = nthreads(ii);
     for jj = 1:nrep
         if (jj > warmup) tic; end
         T = sparse(sparse_i, sparse_j, double(cat(1, a_long, b(:), c_long)));
@@ -75,16 +77,16 @@ for ii = 1:ncores
     end
     for jj = 1:nrep
         if (jj > warmup) tic; end
-        x2 = tridiag_inv_mex_noni(a, b, c, d, ii);
+        x2 = tridiag_inv_mex_noni(a, b, c, d, nthread);
         if (jj > warmup)
             pth_toc(ii,jj-warmup) = toc;
         end
     end
 end
 
-figure; plot(1:ncores, mean(bs_toc,2));
-hold on; plot(1:ncores, mean(ir_toc,2),'r');
-hold on; plot(1:ncores, mean(pth_toc,2),'g');
+figure; plot(nthreads, mean(bs_toc,2));
+hold on; plot(nthreads, mean(ir_toc,2),'r');
+hold on; plot(nthreads, mean(pth_toc,2),'g');
 legend('backslash', 'ir apply', 'pthread');
 return;
 %% test bad inputs

@@ -211,21 +211,26 @@ cint nthreads)
 
     	int remainder_blocks = nblocks - (nblocks/nthreads)*nthreads;
     	cum_blocks[0] = 0;
-    	for (int th_ndx = 0; th_ndx < nthreads; th_ndx++)
+	int max = 0;
+	for (int th_ndx = 0; th_ndx < nthreads; th_ndx++)
 	{
         	blocks_per_thread[th_ndx] = nblocks/nthreads;
         	if (th_ndx < remainder_blocks) {
         	    	blocks_per_thread[th_ndx]++;
         	}
         	cum_blocks[th_ndx + 1] = cum_blocks[th_ndx] + blocks_per_thread[th_ndx];
-    	}
+    		if (blocks_per_thread[th_ndx] > max) {
+			max = blocks_per_thread[th_ndx];
+		}
+	}
+//	printf("%d threads with up to %d blocks each, total blocsk: %d \n", nthreads, max, nblocks);
 
     	for (int th_id = 0; th_id < nthreads; th_id++) {
         	thread_data_array[th_id].thread_id = th_id;
         	thread_data_array[th_id].block_size = block_size;
 		thread_data_array[th_id].subdiag_ptr = subdiag_ptr + cum_blocks[th_id] * (block_size - 1);
         	thread_data_array[th_id].diagvals_ptr = diagvals_ptr + cum_blocks[th_id] * block_size;
-        	thread_data_array[th_id].supdiag_ptr = supdiag_ptr + cum_blocks[th_id] * (block_size - 1);\
+        	thread_data_array[th_id].supdiag_ptr = supdiag_ptr + cum_blocks[th_id] * (block_size - 1);
         	thread_data_array[th_id].rhsr_ptr = rhs_real_ptr + cum_blocks[th_id] * block_size;
         	thread_data_array[th_id].outr_ptr = out_real_ptr + cum_blocks[th_id] * block_size;
         	if (rhs_imag_ptr != NULL) {
